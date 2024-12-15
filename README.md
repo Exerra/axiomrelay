@@ -20,6 +20,8 @@ wip, check back later
 
 if you're a relay developer and are willing to lend some assistance, please contact [Exerra](https://exerra.xyz)
 
+repo name bound to change to a codeword later
+
 ## todo
 
 [AP Relay TODO project](https://github.com/users/Exerra/projects/8)
