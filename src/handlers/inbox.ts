@@ -1,13 +1,9 @@
 import type { Job as BQJob } from "bee-queue"
 import { InboxQueue } from "../util/queues"
 import { createHash, createSign } from "node:crypto"
+import env from "../util/env"
 
 export type Job = BQJob<{ url: string, activity: any }>
-
-function generateDigestHeader(body: string): string {
-    const hash = createHash('sha256').update(body).digest('base64');
-    return `SHA-256=${hash}`;
-}
 
 export const scheduler = async (inboxURL: string, body: any) => {
     let jobs: Job[] = []
@@ -31,7 +27,7 @@ export const scheduler = async (inboxURL: string, body: any) => {
 export const processor = async (job: Job) => {
     const { url, activity } = job.data
     
-    const base = `https://${process.env.HOSTNAME}`
+    const base = `https://${env.hostname}`
 
     const date = new Date().toUTCString()
     const hostname = new URL(url).hostname
@@ -56,7 +52,7 @@ digest: ${headersForSignage.digest}`
     
     sign.update(toSign)
 
-    const signature = sign.sign({ key: process.env.PRIVATE_KEY! }, "base64")
+    const signature = sign.sign({ key: env.privateKey! }, "base64")
 
     const header = `keyId="${base}/actor#main-key",headers="(request-target) host date digest",algorithm="rsa-sha256",signature="${signature}"`
     

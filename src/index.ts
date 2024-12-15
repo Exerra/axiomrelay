@@ -2,6 +2,7 @@ import cors from "@elysiajs/cors";
 import { Elysia } from "elysia";
 import { scheduler as inboxScheduler, processor as inboxProcessor, type Job as InboxJob } from "./handlers/inbox";
 import { InboxQueue } from "./util/queues";
+import env from "./util/env";
 
 const app = new Elysia()
 
@@ -31,7 +32,7 @@ app.get("/.well-known/webfinger", ({ query, request, set }) => {
 	
 	// const base = `${url.protocol}//${url.hostname}${url.port ? ":" + url.port : ""}`
 
-	const base = `https://${process.env.HOSTNAME}`
+	const base = `https://${env.hostname}`
 
 	set.headers["content-type"] = `application/ld+json`
 
@@ -61,7 +62,7 @@ app.get("/actor", async ({ request, body, set, headers }) => {
 	url.protocol = "https"
 	
 	// const base = `${url.protocol}//${url.hostname}${url.port ? ":" + url.port : ""}`
-	const base = `https://${process.env.HOSTNAME}`
+	const base = `https://${env.hostname}`
 
 	set.headers["content-type"] = "application/activity+json"
 
@@ -69,7 +70,7 @@ app.get("/actor", async ({ request, body, set, headers }) => {
 		publicKey: {
 			id: base + "/actor#main-key",
 			owner: base + `/actor`,
-			publicKeyPem: process.env.PUBLIC_KEY
+			publicKeyPem: env.publicKey
 		},
 		inbox: base + `/inbox`,
 		// outbox: base + `/outbox`,
@@ -96,7 +97,7 @@ app.get("/actor", async ({ request, body, set, headers }) => {
 })
 
 app.post("/inbox", async ({ request, body, headers, set }) => {
-	const base = `https://${process.env.HOSTNAME}`
+	const base = `https://${env.hostname}`
 
 	let obj = body.object.object || body.object || base + "/inbox"
 

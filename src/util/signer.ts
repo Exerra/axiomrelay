@@ -1,4 +1,3 @@
-import { GenerateHeadersOptions, Sha256Signer, SignedFetch } from 'activitypub-http-signatures';
 import { createHash } from "node:crypto"
 
 const generateDigestHeader = (body: string): string => {
