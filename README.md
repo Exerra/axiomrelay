@@ -17,3 +17,9 @@ Open http://localhost:3000/ with your browser to see the result. -->
 # ActivityPub relay
 
 wip, check back later
+
+if you're a relay developer and are willing to lend some assistance, please contact [Exerra](https://exerra.xyz)
+
+## todo
+
+[AP Relay TODO project](https://github.com/users/Exerra/projects/8)
