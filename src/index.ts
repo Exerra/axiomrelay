@@ -5,6 +5,7 @@ import { InboxQueue } from "./util/queues";
 import env from "./util/env";
 import { generateDigestHeader } from "./util/signer";
 import { createClient } from "@libsql/client";
+import { signHeaders } from "./util/signatures";
 
 export const libsql = createClient({
 	url: "file:libsql.db"
@@ -113,6 +114,71 @@ app.post("/inbox", async ({ request, body, headers, set }) => {
 
 	console.log(JSON.stringify(body, null, 4))
 
+	if (headers["host"] != env.hostname) {
+		set.status = 401
+		return 401
+	}
+
+	if (!headers["signature"]) {
+		set.status = 401
+		return 401
+	}
+
+	if (!headers["digest"]) {
+		set.status = 401
+		return 401
+	}
+
+	let split = headers["signature"].split(",")
+
+	for (let section of split) {
+		if (!section.startsWith("headers")) continue
+		let headersArr = section.split("=")[1].replaceAll("\"", "").split(" ")
+
+		if (headersArr[0] != "(request-target)") {
+			set.status = 401
+			return 401
+		}
+
+		if (!headersArr.includes("digest")) {
+			set.status = 401
+			return 401
+		}
+
+		headersArr.splice(0, 1) // removes (request-target)
+
+		const digest = generateDigestHeader(JSON.stringify(body))
+		
+		if (headers["digest"] != digest) {
+			set.status = 401
+			return 401
+		}
+
+		// let headersToCheckAgainst: any = {}
+
+		// for (let header of headersArr) {
+		// 	headersToCheckAgainst[header] = headers[header]
+		// }
+
+		// let generatedSignedHeaders = await signHeaders("post /inbox", headersToCheckAgainst, headersArr)
+
+		// let actorHostname = new URL(body.actor).hostname
+
+		// try {
+		// 	const actorReq = await fetch(body.actor, {
+		// 		method: "GET",
+		// 		headers: await signHeaders("get " + new URL(body.actor).pathname, { accept: `application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"`, host: actorHostname, date: new Date().toUTCString() })
+		// 	})
+	
+		// 	console.log(actorReq.status, actorReq.statusText, actorReq.headers)
+		// 	console.log(await actorReq.json())
+		// } catch (e) {
+		// 	console.log(e)
+		// }
+
+		// console.log(headers["signature"], generatedSignedHeaders.signature, "SIGNATURE")
+	}
+
 	if (body.type == "Follow") {
 
 		let reqBody = {
@@ -130,7 +196,7 @@ app.post("/inbox", async ({ request, body, headers, set }) => {
 		}, 3000)
 	}
 
-	if (body.type == "Create") {
+	else if (body.type == "Create") {
 		console.log("creating")
 		let id = obj.id
 
@@ -156,6 +222,65 @@ app.post("/inbox", async ({ request, body, headers, set }) => {
 			const { hostname, inboxpath } = row
 
 			await inboxScheduler(`https://${hostname}/${inboxpath}`, reqBody)
+		}
+	}
+
+	else if (body.type == "Undo" && "object" in body && body.object.type == "Follow") {
+		let actor = body.actor
+
+		let hostname = new URL(actor).hostname
+
+		let sql = await libsql.execute({
+			sql: "SELECT count(id) FROM instances WHERE hostname = ?",
+			args: [hostname]
+		})
+
+		let count = sql.rows[0]["count(id)"]
+
+		if (count == 0) return
+
+		let { rows } = await libsql.execute({
+			sql: "SELECT inboxpath from instances WHERE hostname == ?",
+			args: [hostname]
+		})
+
+		let reqBody = {
+			"@context": ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"],
+			id: base + "/inbox" + "/undo" + Math.random().toString(), // TODO: actual ids
+			type: "Accept",
+			object: body,
+			actor: base + "/actor",
+			// to: [ "https://www.w3.org/ns/activitystreams#Public" ]
+		}
+
+		await inboxScheduler(`https://${hostname}/${rows[0].inboxpath}`, reqBody)
+	}
+
+	else {
+		let id = obj.id
+
+		let { rows } = await libsql.execute({
+			sql: "SELECT hostname, inboxpath from instances WHERE hostname != ?",
+			args: [new URL(id).hostname]
+		})
+
+		// let reqBody = {
+		// 	"@context": ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"],
+		// 	id: base + "/inbox" + "/announce" + Math.random().toString(),
+		// 	type: "Announce",
+		// 	object: body.object,
+		// 	actor: base + "/actor",
+		// 	// to: [ "https://www.w3.org/ns/activitystreams#Public" ]
+		// }
+
+		const digest = generateDigestHeader(JSON.stringify(body))
+
+		// reqBody.signature = await generateLDSignature(reqBody, hostname, date)
+
+		for (let row of rows) {
+			const { hostname, inboxpath } = row
+
+			await inboxScheduler(`https://${hostname}/${inboxpath}`, body)
 		}
 	}
 

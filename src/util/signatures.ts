@@ -59,3 +59,29 @@ export const signHeaders = async (requestTarget: string, headers: any, headersTo
 
     return headers
 }
+
+export const validateHTTPSignature = async (actor: string, headers: any) => {
+    // let headersToCheckAgainst: any = {}
+
+    // for (let header of headersArr) {
+    //     headersToCheckAgainst[header] = headers[header]
+    // }
+
+    // let generatedSignedHeaders = await signHeaders("post /inbox", headersToCheckAgainst, headersArr)
+
+    // let actorHostname = new URL(body.actor).hostname
+
+    // try {
+    //     const actorReq = await fetch(body.actor, {
+    //         method: "GET",
+    //         headers: await signHeaders("get " + new URL(body.actor).pathname, { accept: `application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"`, host: actorHostname, date: new Date().toUTCString() })
+    //     })
+
+    //     console.log(actorReq.status, actorReq.statusText, actorReq.headers)
+    //     console.log(await actorReq.json())
+    // } catch (e) {
+    //     console.log(e)
+    // }
+
+    // console.log(headers["signature"], generatedSignedHeaders.signature, "SIGNATURE")
+}

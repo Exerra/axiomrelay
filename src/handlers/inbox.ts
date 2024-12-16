@@ -4,6 +4,7 @@ import { createHash, createSign } from "node:crypto"
 import env from "../util/env"
 import { generateDigestHeader } from "../util/signer"
 import { signHeaders } from "../util/signatures"
+import { libsql } from ".."
 
 export type Job = BQJob<{ url: string, activity: any }>
 
@@ -63,6 +64,24 @@ export const processor = async (job: Job) => {
 
     // console.log(res, req.status, req.statusText)
     console.log(res)
+
+    try {
+        if (activity.object.type == "Follow") {
+            await libsql.execute({
+                sql: "INSERT INTO instances (hostname, added_at, inboxpath) VALUES (?, ?, ?)",
+                args: [new URL(url).hostname, new Date(), "inbox"]
+            })
+        }
+
+        if (activity.object.type == "Undo" && activity.object.object.type == "Follow") {
+            await libsql.execute({
+                sql: "DELETE FROM instances WHERE hostname = ?",
+                args: [new URL(url).hostname]
+            })
+        }
+    } catch (e) {
+        console.log(e)
+    }
 
     return 200
 }
