@@ -6,10 +6,22 @@ import env from "./util/env";
 import { generateDigestHeader } from "./util/signer";
 import { createClient } from "@libsql/client";
 import { signHeaders } from "./util/signatures";
+import { readdir } from "node:fs/promises"
+import { getModules } from "./util/modules";
 
 export const libsql = createClient({
 	url: "file:libsql.db"
 })
+
+const modules = await getModules()
+
+// console.log(await readdir("modules"))
+
+// let moduleNames = await readdir("modules")
+
+// for (let name of moduleNames) {
+// 	console.log(await import("../modules/" + name))
+// }
 
 const app = new Elysia()
 
@@ -113,70 +125,96 @@ app.post("/inbox", async ({ request, body, headers, set }) => {
 	console.log(headers)
 
 	console.log(JSON.stringify(body, null, 4))
-
-	if (headers["host"] != env.hostname) {
-		set.status = 401
-		return 401
-	}
-
-	if (!headers["signature"]) {
-		set.status = 401
-		return 401
-	}
-
-	if (!headers["digest"]) {
-		set.status = 401
-		return 401
-	}
-
-	let split = headers["signature"].split(",")
-
-	for (let section of split) {
-		if (!section.startsWith("headers")) continue
-		let headersArr = section.split("=")[1].replaceAll("\"", "").split(" ")
-
-		if (headersArr[0] != "(request-target)") {
+	try {
+		if (headers["host"] != env.hostname) {
 			set.status = 401
 			return 401
 		}
 
-		if (!headersArr.includes("digest")) {
+		if (!headers["signature"]) {
 			set.status = 401
 			return 401
 		}
 
-		headersArr.splice(0, 1) // removes (request-target)
+		if (!headers["digest"]) {
+			set.status = 401
+			return 401
+		}
 
-		const digest = generateDigestHeader(JSON.stringify(body))
+		let split = headers["signature"].split(",")
+
+		for (let section of split) {
+			if (!section.startsWith("headers")) continue
+			let headersArr = section.split("=")[1].replaceAll("\"", "").split(" ")
+
+			if (headersArr[0] != "(request-target)") {
+				set.status = 401
+				return 401
+			}
+
+			if (!headersArr.includes("digest")) {
+				set.status = 401
+				return 401
+			}
+
+			headersArr.splice(0, 1) // removes (request-target)
+
+			const digest = generateDigestHeader(JSON.stringify(body))
+			
+			if (headers["digest"] != digest) {
+				set.status = 401
+				return 401
+			}
+
+			// let headersToCheckAgainst: any = {}
+
+			// for (let header of headersArr) {
+			// 	headersToCheckAgainst[header] = headers[header]
+			// }
+
+			// let generatedSignedHeaders = await signHeaders("post /inbox", headersToCheckAgainst, headersArr)
+
+			// let actorHostname = new URL(body.actor).hostname
+
+			// try {
+			// 	const actorReq = await fetch(body.actor, {
+			// 		method: "GET",
+			// 		headers: await signHeaders("get " + new URL(body.actor).pathname, { accept: `application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"`, host: actorHostname, date: new Date().toUTCString() })
+			// 	})
 		
-		if (headers["digest"] != digest) {
+			// 	console.log(actorReq.status, actorReq.statusText, actorReq.headers)
+			// 	console.log(await actorReq.json())
+			// } catch (e) {
+			// 	console.log(e)
+			// }
+
+			// console.log(headers["signature"], generatedSignedHeaders.signature, "SIGNATURE")
+		}
+	} catch (e) {
+		console.log(e)
+
+		// Better to reject
+		set.status = 401
+		return 401
+	}
+
+	let checkableStrings: string[] = []
+
+	if (body.type != "Follow") {
+		checkableStrings.push(body.object.content)
+	}
+
+	for (let module of modules) {
+		let { reject } = await module.run({
+			checkableStrings: checkableStrings,
+			rawActivity: body
+		})
+		console.log(reject)
+
+		if (reject) {
 			set.status = 401
 			return 401
 		}
-
-		// let headersToCheckAgainst: any = {}
-
-		// for (let header of headersArr) {
-		// 	headersToCheckAgainst[header] = headers[header]
-		// }
-
-		// let generatedSignedHeaders = await signHeaders("post /inbox", headersToCheckAgainst, headersArr)
-
-		// let actorHostname = new URL(body.actor).hostname
-
-		// try {
-		// 	const actorReq = await fetch(body.actor, {
-		// 		method: "GET",
-		// 		headers: await signHeaders("get " + new URL(body.actor).pathname, { accept: `application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"`, host: actorHostname, date: new Date().toUTCString() })
-		// 	})
-	
-		// 	console.log(actorReq.status, actorReq.statusText, actorReq.headers)
-		// 	console.log(await actorReq.json())
-		// } catch (e) {
-		// 	console.log(e)
-		// }
-
-		// console.log(headers["signature"], generatedSignedHeaders.signature, "SIGNATURE")
 	}
 
 	if (body.type == "Follow") {
