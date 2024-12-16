@@ -44,3 +44,6 @@ package-lock.json
 .env
 # I save JSON files of bodies and responses here, obviously might contain sensitive data
 responses/*
+
+# database
+libsql.db

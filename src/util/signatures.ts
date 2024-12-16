@@ -31,3 +31,31 @@ digest: ${digest}`
 
     return ldSignature
 }
+
+export const signHeaders = async (requestTarget: string, headers: any, headersToSign: string[] = ["host", "date"]) => {
+    const base = `https://${env.hostname}`
+
+    let signArr = ["(request-target): " + requestTarget]
+
+    for (let header of headersToSign) {
+        signArr.push(`${header}: ${headers[header]}`)
+    }
+    
+    let toSign = signArr.join("\n")
+
+    console.log(signArr, toSign)
+        
+    const sign = createSign("RSA-SHA256")
+    
+    sign.update(toSign)
+
+    const signature = sign.sign({ key: env.privateKey! }, "base64")
+
+    const signatureHeader = `keyId="${base}/actor#main-key",headers="${["(request-target)", ...headersToSign].join(" ")}",algorithm="rsa-sha256",signature="${signature}"`
+
+    headers.signature = signatureHeader
+
+    console.log(headers)
+
+    return headers
+}

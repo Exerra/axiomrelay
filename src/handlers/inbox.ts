@@ -2,6 +2,8 @@ import type { Job as BQJob } from "bee-queue"
 import { InboxQueue } from "../util/queues"
 import { createHash, createSign } from "node:crypto"
 import env from "../util/env"
+import { generateDigestHeader } from "../util/signer"
+import { signHeaders } from "../util/signatures"
 
 export type Job = BQJob<{ url: string, activity: any }>
 
@@ -28,39 +30,21 @@ export const processor = async (job: Job) => {
     const { url, activity } = job.data
     
     const base = `https://${env.hostname}`
-
-    const date = new Date().toUTCString()
     const hostname = new URL(url).hostname
-
-    console.log(url)
-
 
     let headersForSignage = {
         "Content-Type": `application/activity+json`,
-        digest: "SHA-256=" + createHash("sha256").update(JSON.stringify(activity)).digest("base64"),
+        digest: generateDigestHeader(JSON.stringify(activity)),
         host: hostname,
         date: new Date().toUTCString(),
         signature: ""
     }
 
-    let toSign = `(request-target): post ${new URL(url).pathname}
-host: ${headersForSignage.host}
-date: ${headersForSignage.date}
-digest: ${headersForSignage.digest}`
-    
-    const sign = createSign("RSA-SHA256")
-    
-    sign.update(toSign)
-
-    const signature = sign.sign({ key: env.privateKey! }, "base64")
-
-    const header = `keyId="${base}/actor#main-key",headers="(request-target) host date digest",algorithm="rsa-sha256",signature="${signature}"`
-    
-    headersForSignage.signature = header
+    let headersToSign = ["host", "date", "digest"]
 
     let req = await fetch(url, {
         method: "POST",
-        headers: headersForSignage,
+        headers: await signHeaders(`post ${new URL(url).pathname}`, headersForSignage, headersToSign),
         body: JSON.stringify(activity),
     })
 
@@ -78,7 +62,7 @@ digest: ${headersForSignage.digest}`
     const res = await req.text()
 
     // console.log(res, req.status, req.statusText)
-    console.log(req)
+    console.log(res)
 
     return 200
 }

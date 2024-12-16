@@ -3,6 +3,12 @@ import { Elysia } from "elysia";
 import { scheduler as inboxScheduler, processor as inboxProcessor, type Job as InboxJob } from "./handlers/inbox";
 import { InboxQueue } from "./util/queues";
 import env from "./util/env";
+import { generateDigestHeader } from "./util/signer";
+import { createClient } from "@libsql/client";
+
+export const libsql = createClient({
+	url: "file:libsql.db"
+})
 
 const app = new Elysia()
 
@@ -107,21 +113,51 @@ app.post("/inbox", async ({ request, body, headers, set }) => {
 
 	console.log(JSON.stringify(body, null, 4))
 
-	if (body.type != "Follow") return 400
+	if (body.type == "Follow") {
 
-	let reqBody = {
-		"@context": ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"],
-		id: base + "/inbox" + "/accept" + Math.random().toString(),
-		type: "Accept",
-		object: body,
-		actor: base + "/actor"
+		let reqBody = {
+			"@context": ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"],
+			id: base + "/inbox" + "/accept" + Math.random().toString(),
+			type: "Accept",
+			object: body,
+			actor: base + "/actor"
+		}
+
+		let remoteInbox = `https://${new URL(body.id).hostname}/inbox`
+
+		setTimeout(async () => {
+			await inboxScheduler(remoteInbox, reqBody)
+		}, 3000)
 	}
 
-	let remoteInbox = `https://${new URL(body.id).hostname}/inbox`
+	if (body.type == "Create") {
+		console.log("creating")
+		let id = obj.id
 
-	setTimeout(async () => {
-		await inboxScheduler(remoteInbox, reqBody)
-	}, 3000)
+		let { rows } = await libsql.execute({
+			sql: "SELECT hostname, inboxpath from instances WHERE hostname != ?",
+			args: [new URL(id).hostname]
+		})
+
+		let reqBody = {
+			"@context": ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"],
+			id: base + "/inbox" + "/announce" + Math.random().toString(),
+			type: "Announce",
+			object: body.object,
+			actor: base + "/actor",
+			// to: [ "https://www.w3.org/ns/activitystreams#Public" ]
+		}
+
+		const digest = generateDigestHeader(JSON.stringify(reqBody))
+
+		// reqBody.signature = await generateLDSignature(reqBody, hostname, date)
+
+		for (let row of rows) {
+			const { hostname, inboxpath } = row
+
+			await inboxScheduler(`https://${hostname}/${inboxpath}`, reqBody)
+		}
+	}
 
 
 	set.headers["content-type"] = `application/ld+json; profile="https://www.w3.org/ns/activitystreams"`
@@ -150,23 +186,10 @@ console.log(
 // 	"User-Agent": "Relay/0.0.1"
 // }
 
-// const date = new Date().toUTCString()
-
-// let toSign = `(request-target): get /users/9wc2s12x68ge001r
-// host: ${headersForSignage.host}
-// date: ${headersForSignage.date}`
-
-// const sign = createSign("RSA-SHA256")
-// sign.update(toSign)
-// const signature = sign.sign({ key: process.env.PRIVATE_KEY! }, "base64")
-// const header = `keyId="https://<redacted>/actor#main-key",headers="(request-target) host date",algorithm="rsa-sha256",signature="${signature}"`
-
-// headersForSignage.signature = header
-
 // // headersForSignage
 
 // const req = await fetch("https://daedric.world/users/9wc2s12x68ge001r", {
-// 	headers: headersForSignage, //await signRequest("https://daedric.world/users/9wc2s12x68ge001r", "POST", "", headersForSignage)
+// 	headers: await signHeaders("get /users/9wc2s12x68ge001r", headersForSignage), //await signRequest("https://daedric.world/users/9wc2s12x68ge001r", "POST", "", headersForSignage)
 // })
 
 // console.log(req.status, req.statusText, await req.json())
