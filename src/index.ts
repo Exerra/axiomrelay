@@ -8,6 +8,7 @@ import { createClient } from "@libsql/client";
 import { getModules } from "./util/modules";
 import { info } from "./routes/info";
 import { initDB } from "./util/initDB";
+import html from "@elysiajs/html";
 
 export const libsql = await initDB()
 
@@ -23,6 +24,7 @@ app.onError(({ code, error }) => {
 })
 
 app.use(info)
+app.use(html())
 app.use(cors())
 
 app.onParse(({ request, contentType }) => {
@@ -34,6 +36,8 @@ app.onParse(({ request, contentType }) => {
 })
 
 app.get("/", async () => {
+	const base = `https://${env.hostname}`
+	
 	let connectedInstances = await libsql.execute({
 		sql: "SELECT hostname FROM instances",
 		args: []
@@ -43,7 +47,26 @@ app.get("/", async () => {
 
 	console.log(connectedInstances)
 
-	return {rows: connectedInstances.rows, test}
+	let template = Bun.file("./src/templates/index.html")
+	let html = await template.text()
+	
+	html = html.replaceAll("{%connectedInstances%}", connectedInstances.rows.map(hostname => `<tr><td>${hostname.hostname}</td></tr>`).join("\n"))
+	html = html.replaceAll("{%hostname%}", env.hostname!)
+	html = html.replaceAll("{%connectedInstancesCount%}", connectedInstances.rows.length)
+	html = html.replaceAll("{%whichlist%}", env.allowlistOnly ? "whitelist only. Instances will have to be pre-approved." : "public.")
+	html = html.replaceAll("{%base%}", base)
+
+	console.log(await template.text())
+
+	return html
+})
+
+app.get("/style.css", async ({ set }) => {
+	let cssFile = Bun.file("./src/templates/styles/index.css")
+
+	set.headers["content-type"] = "text/css; charset=utf-8"
+
+	return await cssFile.text()
 })
 
 app.all("*", ({ request }) => {
