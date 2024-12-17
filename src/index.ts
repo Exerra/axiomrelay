@@ -7,31 +7,13 @@ import { generateDigestHeader } from "./util/signer";
 import { createClient } from "@libsql/client";
 import { getModules } from "./util/modules";
 import { info } from "./routes/info";
+import { initDB } from "./util/initDB";
 
-export const libsql = createClient({
-	url: "file:libsql.db"
-})
-
-await libsql.execute({
-	sql: `CREATE TABLE IF NOT EXISTS "instances" ("id" integer,"hostname" text NOT NULL,"added_at" datetime NOT NULL,"inboxpath" text NOT NULL, PRIMARY KEY (id))`,
-	args: []
-})
-
-await libsql.execute({
-	sql: `CREATE TABLE IF NOT EXISTS "whitelist" ("id" integer,"hostname" text NOT NULL, PRIMARY KEY (id))`,
-	args: []
-})
-
-await libsql.execute({
-	sql: `CREATE TABLE IF NOT EXISTS "blacklist" ("id" integer,"hostname" text NOT NULL, PRIMARY KEY (id))`,
-	args: []
-})
+export const libsql = await initDB()
 
 const modules = await getModules()
 
 console.log(`Loaded ${modules.length} modules.`)
-
-console.log(env)
 
 const app = new Elysia()
 
@@ -70,45 +52,10 @@ app.all("*", ({ request }) => {
 	return 200
 })
 
-// app.get("/.well-known/webfinger", ({ query, request, set }) => {
-// 	const { resource } = query
-
-// 	const url = new URL(request.url)
-
-// 	url.protocol = "https"
-	
-// 	// const base = `${url.protocol}//${url.hostname}${url.port ? ":" + url.port : ""}`
-
-// 	const base = `https://${env.hostname}`
-
-// 	set.headers["content-type"] = `application/ld+json`
-
-// 	return {
-// 		aliases: [
-// 			`${base}/actor`
-// 		],
-// 		links: [
-// 			{
-// 				rel: "self",
-// 				href: base + `/actor`,
-// 				type: "application/activity+json"
-// 			},
-// 			{
-// 				rel: "self",
-// 				href: base + `/actor`,
-// 				type: "application/ld+json"
-// 			}
-// 		],
-// 		subject: resource
-// 	}
-// })
-
 app.get("/actor", async ({ request, body, set, headers }) => {
 	const url = new URL(request.url)
-
 	url.protocol = "https"
 	
-	// const base = `${url.protocol}//${url.hostname}${url.port ? ":" + url.port : ""}`
 	const base = `https://${env.hostname}`
 
 	set.headers["content-type"] = "application/activity+json"
@@ -392,22 +339,3 @@ app.listen(8079);
 console.log(
 	`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
 );
-
-
-// const url = "https://daedric.world/users/9wc2s12x68ge001r"
-
-// const headersForSignage = {
-// 	accept: `application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"`,
-// 	// "Content-Type": `application/ld+json`,
-// 	host: new URL(url).hostname,
-// 	date: new Date().toUTCString(),
-// 	"User-Agent": "Relay/0.0.1"
-// }
-
-// // headersForSignage
-
-// const req = await fetch("https://daedric.world/users/9wc2s12x68ge001r", {
-// 	headers: await signHeaders("get /users/9wc2s12x68ge001r", headersForSignage), //await signRequest("https://daedric.world/users/9wc2s12x68ge001r", "POST", "", headersForSignage)
-// })
-
-// console.log(req.status, req.statusText, await req.json())

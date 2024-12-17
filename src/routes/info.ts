@@ -57,6 +57,11 @@ info.get("/nodeinfo/2.0.json", async () => {
         args: []
     })
 
+    let blockedInstances = await libsql.execute({
+        sql: "SELECT hostname FROM blacklist",
+        args: []
+    })
+
     return {
         version: "2.0",
         software: {
@@ -82,7 +87,7 @@ info.get("/nodeinfo/2.0.json", async () => {
         },
         metadata: {
             peers: connectedInstances.rows.map(item => item.hostname),
-            blocks: [],
+            blocks: blockedInstances.rows.map(item => item.hostname),
             loadedModules: (await getModules()).map(module => ({
                 name: module.name || null,
                 version: module.version || null,
