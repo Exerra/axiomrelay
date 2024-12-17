@@ -1,6 +1,7 @@
 import Elysia from "elysia";
 import env from "../util/env";
 import { libsql } from "..";
+import { getModules } from "../util/modules";
 
 export const info = new Elysia()
 
@@ -81,7 +82,12 @@ info.get("/nodeinfo/2.0.json", async () => {
         },
         metadata: {
             peers: connectedInstances.rows.map(item => item.hostname),
-            blocks: []
+            blocks: [],
+            loadedModules: (await getModules()).map(module => ({
+                name: module.name || null,
+                version: module.version || null,
+                sourceCode: module.sourceCode || null
+            }))
         }
     }
 })

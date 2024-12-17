@@ -8,7 +8,7 @@ import { ModuleFunction } from "../types/module"
 // }
 
 export const getModules = async () => {
-    let modules: { name: string, run: ModuleFunction, version: string }[] = []
+    let modules: { name: string, run: ModuleFunction, version: string, sourceCode: string }[] = []
 
     let moduleNames = await readdir("modules")
 
