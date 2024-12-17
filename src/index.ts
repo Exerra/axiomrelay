@@ -5,38 +5,64 @@ import { InboxQueue } from "./util/queues";
 import env from "./util/env";
 import { generateDigestHeader } from "./util/signer";
 import { createClient } from "@libsql/client";
-import { signHeaders } from "./util/signatures";
-import { readdir } from "node:fs/promises"
 import { getModules } from "./util/modules";
+import { info } from "./routes/info";
 
 export const libsql = createClient({
 	url: "file:libsql.db"
+})
+
+await libsql.execute({
+	sql: `CREATE TABLE IF NOT EXISTS "instances" ("id" integer,"hostname" text NOT NULL,"added_at" datetime NOT NULL,"inboxpath" text NOT NULL, PRIMARY KEY (id))`,
+	args: []
+})
+
+await libsql.execute({
+	sql: `CREATE TABLE IF NOT EXISTS "whitelist" ("id" integer,"hostname" text NOT NULL, PRIMARY KEY (id))`,
+	args: []
+})
+
+await libsql.execute({
+	sql: `CREATE TABLE IF NOT EXISTS "blacklist" ("id" integer,"hostname" text NOT NULL, PRIMARY KEY (id))`,
+	args: []
 })
 
 const modules = await getModules()
 
 console.log(`Loaded ${modules.length} modules.`)
 
-// console.log(await readdir("modules"))
-
-// let moduleNames = await readdir("modules")
-
-// for (let name of moduleNames) {
-// 	console.log(await import("../modules/" + name))
-// }
+console.log(env)
 
 const app = new Elysia()
 
+app.onError(({ code, error }) => {
+	console.log(code, error)
+	return new Response(error.toString())
+})
+
+app.use(info)
 app.use(cors())
 
 app.onParse(({ request, contentType }) => {
 	console.log(contentType)
 	if (contentType == "application/activity+json") return request.json()
+	if (contentType.startsWith("application/ld+json")) return request.json()
 
 	return request.text()
 })
 
-app.get("/", () => "Hello Elysia")
+app.get("/", async () => {
+	let connectedInstances = await libsql.execute({
+		sql: "SELECT hostname FROM instances",
+		args: []
+	})
+
+	let test = connectedInstances.rows.map(item => item.hostname)
+
+	console.log(connectedInstances)
+
+	return {rows: connectedInstances.rows, test}
+})
 
 app.all("*", ({ request }) => {
 	console.log("WILDCARD", request.url)
@@ -44,38 +70,38 @@ app.all("*", ({ request }) => {
 	return 200
 })
 
-app.get("/.well-known/webfinger", ({ query, request, set }) => {
-	const { resource } = query
+// app.get("/.well-known/webfinger", ({ query, request, set }) => {
+// 	const { resource } = query
 
-	const url = new URL(request.url)
+// 	const url = new URL(request.url)
 
-	url.protocol = "https"
+// 	url.protocol = "https"
 	
-	// const base = `${url.protocol}//${url.hostname}${url.port ? ":" + url.port : ""}`
+// 	// const base = `${url.protocol}//${url.hostname}${url.port ? ":" + url.port : ""}`
 
-	const base = `https://${env.hostname}`
+// 	const base = `https://${env.hostname}`
 
-	set.headers["content-type"] = `application/ld+json`
+// 	set.headers["content-type"] = `application/ld+json`
 
-	return {
-		aliases: [
-			`${base}/actor`
-		],
-		links: [
-			{
-				rel: "self",
-				href: base + `/actor`,
-				type: "application/activity+json"
-			},
-			{
-				rel: "self",
-				href: base + `/actor`,
-				type: "application/ld+json"
-			}
-		],
-		subject: resource
-	}
-})
+// 	return {
+// 		aliases: [
+// 			`${base}/actor`
+// 		],
+// 		links: [
+// 			{
+// 				rel: "self",
+// 				href: base + `/actor`,
+// 				type: "application/activity+json"
+// 			},
+// 			{
+// 				rel: "self",
+// 				href: base + `/actor`,
+// 				type: "application/ld+json"
+// 			}
+// 		],
+// 		subject: resource
+// 	}
+// })
 
 app.get("/actor", async ({ request, body, set, headers }) => {
 	const url = new URL(request.url)
@@ -121,6 +147,7 @@ app.post("/inbox", async ({ request, body, headers, set }) => {
 	const base = `https://${env.hostname}`
 
 	let obj = body.object.object || body.object || base + "/inbox"
+	let incomingInstanceHostname = new URL(body.id).hostname
 
 	console.log("INBOX", obj)
 
@@ -129,17 +156,17 @@ app.post("/inbox", async ({ request, body, headers, set }) => {
 	console.log(JSON.stringify(body, null, 4))
 	try {
 		if (headers["host"] != env.hostname) {
-			set.status = 401
+			// set.status = 401
 			return 401
 		}
 
 		if (!headers["signature"]) {
-			set.status = 401
+			// set.status = 401
 			return 401
 		}
 
 		if (!headers["digest"]) {
-			set.status = 401
+			// set.status = 401
 			return 401
 		}
 
@@ -150,12 +177,12 @@ app.post("/inbox", async ({ request, body, headers, set }) => {
 			let headersArr = section.split("=")[1].replaceAll("\"", "").split(" ")
 
 			if (headersArr[0] != "(request-target)") {
-				set.status = 401
+				// set.status = 401
 				return 401
 			}
 
 			if (!headersArr.includes("digest")) {
-				set.status = 401
+				// set.status = 401
 				return 401
 			}
 
@@ -164,7 +191,7 @@ app.post("/inbox", async ({ request, body, headers, set }) => {
 			const digest = generateDigestHeader(JSON.stringify(body))
 			
 			if (headers["digest"] != digest) {
-				set.status = 401
+				// set.status = 401
 				return 401
 			}
 
@@ -196,40 +223,66 @@ app.post("/inbox", async ({ request, body, headers, set }) => {
 		console.log(e)
 
 		// Better to reject
-		set.status = 401
+		// set.status = 401
 		return 401
 	}
 
 	let checkableStrings: string[] = []
 
 	if (body.type != "Follow") {
-		checkableStrings.push(body.object.content)
-	}
+		if ("object" in body && body.object.type != "Follow") {
+			checkableStrings.push(body.object.content)
+			console.log("checking checking checking checking")
 
-	for (let module of modules) {
-		let { reject } = await module.run({
-			checkableStrings: checkableStrings,
-			rawActivity: body
-		})
-		console.log(reject)
-
-		if (reject) {
-			set.status = 401
-			return 401
+			for (let module of modules) {
+				let { reject } = await module.run({
+					checkableStrings: checkableStrings,
+					rawActivity: body
+				})
+				console.log(reject)
+		
+				if (reject) {
+					console.log("rejecting", reject)
+					// set.status = 401
+					return 401
+				}
+			}
 		}
 	}
 
+
+
 	if (body.type == "Follow") {
+		let reject = false
+
+		let blacklist = await libsql.execute({
+			sql: `SELECT count(id) FROM blacklist WHERE hostname = ?;`,
+			args: [incomingInstanceHostname]
+		})
+
+		if (blacklist.rows[0]["count(id)"] > 0) reject = true
+
+		if (env.allowlistOnly) {
+			let whitelist = await libsql.execute({
+				sql: `SELECT count(id) FROM whitelist WHERE hostname = ?;`,
+				args: [incomingInstanceHostname]
+			})
+
+			// Blacklist is more important
+			if (blacklist.rows[0]["count(id)"] as number > 0) reject = true
+			else if (whitelist.rows[0]["count(id)"] == 0) reject = true
+			else reject = false
+		}
 
 		let reqBody = {
 			"@context": ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"],
-			id: base + "/inbox" + "/accept" + Math.random().toString(),
-			type: "Accept",
+			id: base + "/inbox" + "/followresponse" + Math.random().toString(),
+			type: reject ? "Reject" : "Accept",
 			object: body,
 			actor: base + "/actor"
 		}
 
-		let remoteInbox = `https://${new URL(body.id).hostname}/inbox`
+		let remoteInbox = `https://${incomingInstanceHostname}/inbox`
 
 		setTimeout(async () => {
 			await inboxScheduler(remoteInbox, reqBody)

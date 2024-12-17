@@ -66,14 +66,16 @@ export const processor = async (job: Job) => {
     console.log(res)
 
     try {
-        if (activity.object.type == "Follow") {
+        // If subscription to relay is accepted
+        if (activity.type == "Accept" && activity.object.type == "Follow") {
             await libsql.execute({
                 sql: "INSERT INTO instances (hostname, added_at, inboxpath) VALUES (?, ?, ?)",
                 args: [new URL(url).hostname, new Date(), "inbox"]
             })
         }
 
-        if (activity.object.type == "Undo" && activity.object.object.type == "Follow") {
+        // If unsubscribe from relay is accepted (it should always be, but still)
+        if (activity.type == "Accept" && activity.object.type == "Undo" && activity.object.object.type == "Follow") {
             await libsql.execute({
                 sql: "DELETE FROM instances WHERE hostname = ?",
                 args: [new URL(url).hostname]

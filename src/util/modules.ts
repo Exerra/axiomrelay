@@ -15,6 +15,8 @@ export const getModules = async () => {
     for (let name of moduleNames) {
         let module = await import(import.meta.resolve("../../modules/" + name))
 
+        if (module.disabled) continue
+
         modules.push(module)
     }
 
