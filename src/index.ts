@@ -15,6 +15,8 @@ export const libsql = createClient({
 
 const modules = await getModules()
 
+console.log(`Loaded ${modules.length} modules.`)
+
 // console.log(await readdir("modules"))
 
 // let moduleNames = await readdir("modules")
@@ -311,7 +313,7 @@ app.post("/inbox", async ({ request, body, headers, set }) => {
 		// 	// to: [ "https://www.w3.org/ns/activitystreams#Public" ]
 		// }
 
-		const digest = generateDigestHeader(JSON.stringify(body))
+		// const digest = generateDigestHeader(JSON.stringify(body))
 
 		// reqBody.signature = await generateLDSignature(reqBody, hostname, date)
 
