@@ -60,8 +60,6 @@ app.get("/", async () => {
 		html = html.replaceAll(`{%${key}%}`, variables[key])
 	}
 
-	console.log(await template.text())
-
 	return html
 })
 
