@@ -10,6 +10,7 @@ import { initDB } from "./util/initDB";
 import { webpages } from "./routes/webpages";
 import { initTelegram } from "./util/telegram";
 import { generateKeys } from "./util/generateKeys";
+import { signHeaders } from "./util/signatures";
 
 await generateKeys()
 
@@ -91,11 +92,11 @@ app.post("/inbox", async ({ request, body, headers, set }) => {
 	let obj = body.object.object || body.object || base + "/inbox"
 	let incomingInstanceHostname = new URL(body.id).hostname
 
-	console.log("INBOX", obj)
+	// console.log("INBOX", obj)
 
-	console.log(headers)
+	// console.log(headers)
 
-	console.log(JSON.stringify(body, null, 4))
+	// console.log(JSON.stringify(body, null, 4))
 	try {
 		if (headers["host"] != env.hostname) {
 			// set.status = 401
@@ -216,6 +217,18 @@ app.post("/inbox", async ({ request, body, headers, set }) => {
 			else reject = false
 		}
 
+		let { actor } = body
+		let actorURL = new URL(actor)
+
+		const actorReq = await fetch(actor, {
+			method: "GET",
+			headers: await signHeaders("get " + actorURL.pathname, { host: actorURL.hostname, date: new Date().toUTCString(), Accept: "application/ld+json" })
+		})
+
+		const actorRes = await actorReq.json()
+
+		let remoteInbox = actorRes.sharedInbox || actorRes.endpoints.sharedInbox || actorRes.inbox || `https://${incomingInstanceHostname}/inbox`
+
 		let reqBody = {
 			"@context": ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"],
 			id: base + "/inbox" + "/followresponse" + Math.random().toString(),
@@ -223,8 +236,6 @@ app.post("/inbox", async ({ request, body, headers, set }) => {
 			object: body,
 			actor: base + "/actor"
 		}
-
-		let remoteInbox = `https://${incomingInstanceHostname}/inbox`
 
 		setTimeout(async () => {
 			await inboxScheduler(remoteInbox, reqBody)
