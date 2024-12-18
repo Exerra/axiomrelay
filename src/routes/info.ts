@@ -88,7 +88,7 @@ info.get("/nodeinfo/2.0.json", async () => {
         metadata: {
             peers: connectedInstances.rows.map(item => item.hostname),
             blocks: blockedInstances.rows.map(item => item.hostname),
-            loadedModules: (await getModules()).map(module => ({
+            loadedModules: (await getModules()).active.map(module => ({
                 name: module.name || null,
                 version: module.version || null,
                 sourceCode: module.sourceCode || null
