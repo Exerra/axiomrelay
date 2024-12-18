@@ -43,18 +43,22 @@ app.get("/", async () => {
 		args: []
 	})
 
-	let test = connectedInstances.rows.map(item => item.hostname)
+	let variables = {
+		connectedInstances: connectedInstances.rows.map(hostname => `<tr><td>${hostname.hostname}</td></tr>`).join("\n"),
+		hostname: env.hostname,
+		connectedInstancesCount: connectedInstances.rows.length,
+		whichlist: env.allowlistOnly ? "whitelist only. Instances will have to be pre-approved." : "public.",
+		base: base
+	}
 
 	console.log(connectedInstances)
 
 	let template = Bun.file("./src/templates/index.html")
 	let html = await template.text()
-	
-	html = html.replaceAll("{%connectedInstances%}", connectedInstances.rows.map(hostname => `<tr><td>${hostname.hostname}</td></tr>`).join("\n"))
-	html = html.replaceAll("{%hostname%}", env.hostname!)
-	html = html.replaceAll("{%connectedInstancesCount%}", connectedInstances.rows.length)
-	html = html.replaceAll("{%whichlist%}", env.allowlistOnly ? "whitelist only. Instances will have to be pre-approved." : "public.")
-	html = html.replaceAll("{%base%}", base)
+
+	for (let key of Object.keys(variables)) {
+		html = html.replaceAll(`{%${key}%}`, variables[key])
+	}
 
 	console.log(await template.text())
 
