@@ -18,6 +18,8 @@ Open http://localhost:3000/ with your browser to see the result. -->
 
 wip, check back later
 
+[quick post about this](https://daedric.world/notes/a1xzim3ktlwq00qv)
+
 if you're a relay developer and are willing to lend some assistance, please contact [Exerra](https://exerra.xyz)
 
 repo name bound to change to a codeword later
