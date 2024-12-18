@@ -95,11 +95,11 @@ app.post("/inbox", async (ctx) => {
 	let obj = body.object.object || body.object || base + "/inbox"
 	let incomingInstanceHostname = new URL(body.id).hostname
 
-	console.log("INBOX", obj)
+	// console.log("INBOX", obj)
 
-	console.log(headers)
+	// console.log(headers)
 
-	console.log(JSON.stringify(body, null, 4))
+	// console.log(JSON.stringify(body, null, 4))
 	try {
 		if (headers["host"] != env.hostname) {
 			// set.status = 401
@@ -177,18 +177,15 @@ app.post("/inbox", async (ctx) => {
 
 	if (body.type != "Follow") {
 		if ("object" in body && body.object.type != "Follow") {
-			checkableStrings.push(body.object.content)
-			console.log("checking checking checking checking")
+			if (typeof body.object != "string") checkableStrings.push(body.object.content)
 
 			for (let module of modules) {
 				let { reject } = await module.run({
 					checkableStrings: checkableStrings,
 					rawActivity: body
 				})
-				console.log(reject)
 		
 				if (reject) {
-					console.log("rejecting", reject)
 					// set.status = 401
 					return 401
 				}
@@ -199,8 +196,6 @@ app.post("/inbox", async (ctx) => {
 	if (body.type == "Accept") {
 		return 200
 	}
-
-
 
 	if (body.type == "Follow") {
 		let reject = false
@@ -251,7 +246,6 @@ app.post("/inbox", async (ctx) => {
 	}
 
 	else if (body.type == "Create") {
-		console.log("creating")
 		let id = obj.id
 
 		let { rows } = await libsql.execute({
@@ -331,8 +325,6 @@ app.post("/inbox", async (ctx) => {
 		// const digest = generateDigestHeader(JSON.stringify(body))
 
 		// reqBody.signature = await generateLDSignature(reqBody, hostname, date)
-
-		console.log("ANNOUNCING RAHHHHHHH")
 
 		for (let row of rows) {
 			const { hostname, inboxpath } = row

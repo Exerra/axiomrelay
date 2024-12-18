@@ -42,8 +42,6 @@ export const signHeaders = async (requestTarget: string, headers: any, headersTo
     }
     
     let toSign = signArr.join("\n")
-
-    console.log(signArr, toSign)
         
     const sign = createSign("RSA-SHA256")
     
@@ -54,8 +52,6 @@ export const signHeaders = async (requestTarget: string, headers: any, headersTo
     const signatureHeader = `keyId="${base}/actor#main-key",headers="${["(request-target)", ...headersToSign].join(" ")}",algorithm="rsa-sha256",signature="${signature}"`
 
     headers.signature = signatureHeader
-
-    console.log(headers)
 
     return headers
 }

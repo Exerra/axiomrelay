@@ -49,8 +49,6 @@ export const processor = async (job: Job) => {
         body: JSON.stringify(activity),
     })
 
-    console.log(req.status)
-
     if (req.status >= 300) {
         console.log(req.status, req.statusText)
 
@@ -61,9 +59,6 @@ export const processor = async (job: Job) => {
     }
 
     const res = await req.text()
-
-    // console.log(res, req.status, req.statusText)
-    console.log(res)
 
     try {
         // If subscription to relay is accepted

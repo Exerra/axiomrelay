@@ -32,8 +32,6 @@ webpages.get("/", async () => {
         subscribedRelays: subscribedRelays.rows.map(hostname => `<tr><td>${hostname.hostname}</td></tr>`).join("\n")
     }
 
-    console.log(connectedInstances)
-
     let template = Bun.file("./src/templates/index.html")
     let html = await template.text()
 

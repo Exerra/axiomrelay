@@ -59,7 +59,6 @@ export const initTelegram = async () => {
                 body: JSON.stringify(activity)
             })
     
-            console.log(req.status, req.statusText, activity)
     
             if (req.status > 300) {
                 ctx.reply(`[❌] Relay ${url} responded with ${req.status} - ${req.statusText}`)
@@ -123,7 +122,6 @@ export const initTelegram = async () => {
                 body: JSON.stringify(activity)
             })
     
-            console.log(req.status, req.statusText, activity)
     
             if (req.status > 300) {
                 ctx.reply(`[❌] Relay ${hostname} responded with ${req.status} - ${req.statusText}`)
@@ -162,7 +160,6 @@ export const initTelegram = async () => {
     })
 
     client.command("allow", async (ctx) => {
-        console.log(ctx.from)
         const { payload, from } = ctx
 
         if (!env.telegram.adminUsers.includes(from.username)) {
@@ -184,7 +181,6 @@ export const initTelegram = async () => {
     })
 
     client.command("unallow", async (ctx) => {
-        console.log(ctx.from)
         const { payload, from } = ctx
 
         if (!env.telegram.adminUsers.includes(from.username)) {
@@ -206,7 +202,6 @@ export const initTelegram = async () => {
     })
 
     client.command("block", async (ctx) => {
-        console.log(ctx.from)
         const { payload, from } = ctx
 
         if (!env.telegram.adminUsers.includes(from.username)) {
@@ -228,7 +223,6 @@ export const initTelegram = async () => {
     })
 
     client.command("unblock", async (ctx) => {
-        console.log(ctx.from)
         const { payload, from } = ctx
 
         if (!env.telegram.adminUsers.includes(from.username)) {
