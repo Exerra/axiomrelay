@@ -1,6 +1,6 @@
 import cors from "@elysiajs/cors";
 import { Elysia } from "elysia";
-import { scheduler as inboxScheduler, processor as inboxProcessor, type Job as InboxJob } from "./handlers/inbox";
+import { scheduler as inboxScheduler, processor as inboxProcessor, type Job as InboxJob } from "./queues/inbox";
 import { InboxQueue } from "./util/queues";
 import env from "./util/env";
 import { generateDigestHeader } from "./util/signer";
@@ -8,12 +8,16 @@ import { getModules } from "./util/modules";
 import { info } from "./routes/info";
 import { initDB } from "./util/initDB";
 import { webpages } from "./routes/webpages";
+import { initTelegram } from "./util/telegram";
 
 export const libsql = await initDB()
 
 const modules = await getModules()
 
-console.log(`Loaded ${modules.length} modules.`)
+const telegram = await initTelegram()
+
+// console.log(`Loaded ${modules.length} modules.`)
+console.log(`[MODULES] Loaded ${modules.length} modules.`)
 
 const app = new Elysia()
 
@@ -325,5 +329,5 @@ InboxQueue.process(1, async (job: InboxJob) => {
 app.listen(8079);
 
 console.log(
-	`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
+	`📮 Relay is running at ${app.server?.hostname}:${app.server?.port}`
 );

@@ -6,5 +6,10 @@ export default {
     publicKey: env.PUBLIC_KEY,
     allowlistOnly: env.ALLOWLIST_ONLY == "true",
     adminUsername: env.ADMIN_USERNAME,
-    adminURL: env.ADMIN_URL
+    adminURL: env.ADMIN_URL,
+    telegram: {
+        enabled: env.TELEGRAM_ENABLED == "true",
+        adminUsers: JSON.parse(env.TELEGRAM_ADMINUSERS_ARRAY || "[]"),
+        apiKey: env.TELEGRAM_APIKEY
+    }
 }

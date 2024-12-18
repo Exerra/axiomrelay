@@ -16,7 +16,8 @@
     "elysia": "latest",
     "http-signature": "^1.4.0",
     "http-signed-fetch": "^1.0.1",
-    "jsonld": "^8.3.2"
+    "jsonld": "^8.3.2",
+    "telegraf": "^4.16.3"
   },
   "devDependencies": {
     "bun-types": "latest"
