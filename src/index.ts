@@ -9,6 +9,9 @@ import { info } from "./routes/info";
 import { initDB } from "./util/initDB";
 import { webpages } from "./routes/webpages";
 import { initTelegram } from "./util/telegram";
+import { generateKeys } from "./util/generateKeys";
+
+await generateKeys()
 
 export const libsql = await initDB()
 
