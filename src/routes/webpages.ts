@@ -15,7 +15,7 @@ webpages.get("/", async () => {
         args: []
     })
 
-    let variables = {
+    let variables: { [key: string]: string | number | undefined } = {
         connectedInstances: connectedInstances.rows.map(hostname => `<tr><td>${hostname.hostname}</td></tr>`).join("\n"),
         hostname: env.hostname,
         connectedInstancesCount: connectedInstances.rows.length,
@@ -31,7 +31,7 @@ webpages.get("/", async () => {
     let html = await template.text()
 
     for (let key of Object.keys(variables)) {
-        html = html.replaceAll(`{%${key}%}`, variables[key])
+        html = html.replaceAll(`{%${key}%}`, variables[key] as string)
     }
 
     return html

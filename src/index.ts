@@ -86,7 +86,9 @@ app.get("/actor", async ({ request, body, set, headers }) => {
 	return temp
 })
 
-app.post("/inbox", async ({ request, body, headers, set }) => {
+app.post("/inbox", async (ctx) => {
+	const { request, headers, set } = ctx
+	const body = ctx.body as any
 	const base = `https://${env.hostname}`
 
 	let obj = body.object.object || body.object || base + "/inbox"
@@ -203,6 +205,7 @@ app.post("/inbox", async ({ request, body, headers, set }) => {
 			args: [incomingInstanceHostname]
 		})
 
+		// @ts-ignore :)
 		if (blacklist.rows[0]["count(id)"] > 0) reject = true
 
 		if (env.allowlistOnly) {
