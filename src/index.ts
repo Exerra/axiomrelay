@@ -49,6 +49,7 @@ app.all("*", ({ request }) => {
 })
 
 app.get("/actor", async ({ request, body, set, headers }) => {
+	console.log("actor being fetched")
 	const url = new URL(request.url)
 	url.protocol = "https"
 	
@@ -94,11 +95,11 @@ app.post("/inbox", async (ctx) => {
 	let obj = body.object.object || body.object || base + "/inbox"
 	let incomingInstanceHostname = new URL(body.id).hostname
 
-	// console.log("INBOX", obj)
+	console.log("INBOX", obj)
 
-	// console.log(headers)
+	console.log(headers)
 
-	// console.log(JSON.stringify(body, null, 4))
+	console.log(JSON.stringify(body, null, 4))
 	try {
 		if (headers["host"] != env.hostname) {
 			// set.status = 401
@@ -193,6 +194,10 @@ app.post("/inbox", async (ctx) => {
 				}
 			}
 		}
+	}
+
+	if (body.type == "Accept") {
+		return 200
 	}
 
 
@@ -305,12 +310,44 @@ app.post("/inbox", async (ctx) => {
 		await inboxScheduler(`https://${hostname}/${rows[0].inboxpath}`, reqBody)
 	}
 
-	else {
+	else if (body.type == "Announce") {
 		let id = obj.id
+		let actor = body.actor
 
 		let { rows } = await libsql.execute({
 			sql: "SELECT hostname, inboxpath from instances WHERE hostname != ?",
-			args: [new URL(id).hostname]
+			args: [new URL(actor).hostname]
+		})
+
+		let reqBody = {
+			"@context": ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"],
+			id: base + "/inbox" + "/announce" + Math.random().toString(),
+			type: "Announce",
+			object: body.object,
+			actor: base + "/actor",
+			// to: [ "https://www.w3.org/ns/activitystreams#Public" ]
+		}
+
+		// const digest = generateDigestHeader(JSON.stringify(body))
+
+		// reqBody.signature = await generateLDSignature(reqBody, hostname, date)
+
+		console.log("ANNOUNCING RAHHHHHHH")
+
+		for (let row of rows) {
+			const { hostname, inboxpath } = row
+
+			await inboxScheduler(`https://${hostname}/${inboxpath}`, reqBody)
+		}
+	}
+
+	else {
+		let id = obj.id
+		let actor = body.actor
+
+		let { rows } = await libsql.execute({
+			sql: "SELECT hostname, inboxpath from instances WHERE hostname != ?",
+			args: [new URL(actor).hostname]
 		})
 
 		// let reqBody = {

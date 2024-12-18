@@ -20,5 +20,10 @@ export const initDB = async () => {
         args: []
     })
 
+    await libsql.execute({
+        sql: `CREATE TABLE IF NOT EXISTS "relays" ("id" integer,"hostname" text NOT NULL,"activity" text NOT NULL, "inboxurl" TEXT NOT NULL, PRIMARY KEY (id))`,
+        args: []
+    })
+
     return libsql
 }

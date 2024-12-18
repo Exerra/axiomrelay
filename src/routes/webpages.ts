@@ -15,6 +15,11 @@ webpages.get("/", async () => {
         args: []
     })
 
+    let subscribedRelays = await libsql.execute({
+        sql: "SELECT hostname FROM relays",
+        args: []
+    })
+
     let variables: { [key: string]: string | number | undefined } = {
         connectedInstances: connectedInstances.rows.map(hostname => `<tr><td>${hostname.hostname}</td></tr>`).join("\n"),
         hostname: env.hostname,
@@ -22,7 +27,9 @@ webpages.get("/", async () => {
         whichlist: env.allowlistOnly ? "whitelist only. Instances will have to be pre-approved." : "public.",
         base: base,
         adminUsername: env.adminUsername,
-        adminURL: env.adminURL
+        adminURL: env.adminURL,
+        subscribedRelaysCount: subscribedRelays.rows.length,
+        subscribedRelays: subscribedRelays.rows.map(hostname => `<tr><td>${hostname.hostname}</td></tr>`).join("\n")
     }
 
     console.log(connectedInstances)
