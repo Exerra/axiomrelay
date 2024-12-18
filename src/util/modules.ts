@@ -20,5 +20,5 @@ export const getModules = async () => {
         modules.push(module)
     }
 
-    return modules
+    return { active: modules, total: moduleNames.length }
 }

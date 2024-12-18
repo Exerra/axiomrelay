@@ -12,12 +12,12 @@ import { initTelegram } from "./util/telegram";
 
 export const libsql = await initDB()
 
-const modules = await getModules()
+const { active: modules, total } = await getModules()
 
 const telegram = await initTelegram()
 
 // console.log(`Loaded ${modules.length} modules.`)
-console.log(`[MODULES] Loaded ${modules.length} modules.`)
+console.log(`[MODULES] Loaded ${modules.length} modules out of ${total} in total.`)
 
 const app = new Elysia()
 
