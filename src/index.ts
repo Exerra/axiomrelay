@@ -4,11 +4,10 @@ import { scheduler as inboxScheduler, processor as inboxProcessor, type Job as I
 import { InboxQueue } from "./util/queues";
 import env from "./util/env";
 import { generateDigestHeader } from "./util/signer";
-import { createClient } from "@libsql/client";
 import { getModules } from "./util/modules";
 import { info } from "./routes/info";
 import { initDB } from "./util/initDB";
-import html from "@elysiajs/html";
+import { webpages } from "./routes/webpages";
 
 export const libsql = await initDB()
 
@@ -24,7 +23,7 @@ app.onError(({ code, error }) => {
 })
 
 app.use(info)
-app.use(html())
+app.use(webpages)
 app.use(cors())
 
 app.onParse(({ request, contentType }) => {
@@ -33,42 +32,6 @@ app.onParse(({ request, contentType }) => {
 	if (contentType.startsWith("application/ld+json")) return request.json()
 
 	return request.text()
-})
-
-app.get("/", async () => {
-	const base = `https://${env.hostname}`
-	
-	let connectedInstances = await libsql.execute({
-		sql: "SELECT hostname FROM instances",
-		args: []
-	})
-
-	let variables = {
-		connectedInstances: connectedInstances.rows.map(hostname => `<tr><td>${hostname.hostname}</td></tr>`).join("\n"),
-		hostname: env.hostname,
-		connectedInstancesCount: connectedInstances.rows.length,
-		whichlist: env.allowlistOnly ? "whitelist only. Instances will have to be pre-approved." : "public.",
-		base: base
-	}
-
-	console.log(connectedInstances)
-
-	let template = Bun.file("./src/templates/index.html")
-	let html = await template.text()
-
-	for (let key of Object.keys(variables)) {
-		html = html.replaceAll(`{%${key}%}`, variables[key])
-	}
-
-	return html
-})
-
-app.get("/style.css", async ({ set }) => {
-	let cssFile = Bun.file("./src/templates/styles/index.css")
-
-	set.headers["content-type"] = "text/css; charset=utf-8"
-
-	return await cssFile.text()
 })
 
 app.all("*", ({ request }) => {
