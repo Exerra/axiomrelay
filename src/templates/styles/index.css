@@ -59,6 +59,8 @@ main {
     overflow-y: scroll;
     overflow-x: hidden;
     scrollbar-gutter: stable;
+    padding-left: 50px;
+    padding-right: 50px
     /* scrollbar-gutter: stable both-edges; */
 }
 
@@ -88,4 +90,32 @@ code {
 
 h3 {
     color: #CCBCBC;
+}
+
+@media only screen and (max-width: 600px) {
+    html, body, main {
+        height: auto;
+    }
+
+    main {
+        margin-top: 30px;
+        display: grid;
+        grid-template-columns: repeat(1, 1fr);
+        width: 100%;
+        height: 100%;
+    }
+
+    .instances {
+        padding-left: 30px;
+        padding-right: 30px
+    }
+
+    .info {
+        padding-left: 30px;
+        padding-right: 30px;
+        border-right: 0px;
+        border-bottom: 0px;
+        /* border-bottom: 1px solid #F1E3E4; */
+        /* max-width: 50vw; */
+    }
 }

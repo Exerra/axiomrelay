@@ -20,7 +20,9 @@ webpages.get("/", async () => {
         hostname: env.hostname,
         connectedInstancesCount: connectedInstances.rows.length,
         whichlist: env.allowlistOnly ? "whitelist only. Instances will have to be pre-approved." : "public.",
-        base: base
+        base: base,
+        adminUsername: env.adminUsername,
+        adminURL: env.adminURL
     }
 
     console.log(connectedInstances)

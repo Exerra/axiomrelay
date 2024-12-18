@@ -13,7 +13,8 @@
                 <header>
                     <h1>ActivityPub relay</h1>
                     <p>Hosted on <span class="darkest">{%hostname%}</span></p>
-                    <p>Ran by <a href="https://daedric.world/@exerra" class="darkest">@exerra@daedric.world</a></p>
+                    <p>Ran by <a href="{%adminURL%}" class="darkest">{%adminUsername%}</a></p>
+                    <p>Source code: <a href="https://github.com/Exerra/ap-relay" class="darkest">https://github.com/Exerra/ap-relay</a></p>
                 </header>
 
                 <!-- <hr /> -->
@@ -27,10 +28,10 @@
                 <p>This instance is {%whichlist%}</p>
 
                 <h3>Mastodon, Misskey</h3>
-                <p>Admins can add this relay by adding <code>{%base%}/inbox</code> in their relay settings.</p>
+                <p>Admins can add this relay by adding <code>https://{%hostname%}/inbox</code> in their relay settings.</p>
 
                 <h3>Pleroma, Akkoma</h3>
-                <p>Not yet implemented. Admins can try adding <code>{%base%}/inbox</code> in their relay settings, however not guaranteed that it will work.</p>
+                <p>Not yet implemented. Admins can try adding <code>https://{%hostname%}/inbox</code> in their relay settings, however not guaranteed that it will work.</p>
             </div>
         </div>
     
