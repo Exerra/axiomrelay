@@ -1,0 +1,30 @@
+services:
+  relay:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "8079:8079"
+    networks:
+      - daedricrelay
+    volumes:
+      - ./modules:/app/modules
+    env_file:
+      - .env
+  
+  redis:
+    restart: unless-stopped
+    image: redis:7-alpine
+    networks:
+      - daedricrelay
+    volumes:
+      - ./redis:/data
+    healthcheck:
+      test: "redis-cli ping"
+      interval: 5s
+      retries: 20
+
+networks:
+  daedricrelay:
