@@ -95,11 +95,7 @@ app.post("/inbox", async (ctx) => {
 	let obj = body.object.object || body.object || base + "/inbox"
 	let incomingInstanceHostname = new URL(body.id).hostname
 
-	// console.log("INBOX", obj)
-
 	// console.log(headers)
-
-	// console.log(JSON.stringify(body, null, 4))
 	try {
 		if (headers["host"] != env.hostname) {
 			// set.status = 401
@@ -259,12 +255,8 @@ app.post("/inbox", async (ctx) => {
 			type: "Announce",
 			object: body.object,
 			actor: base + "/actor",
-			// to: [ "https://www.w3.org/ns/activitystreams#Public" ]
 		}
 
-		const digest = generateDigestHeader(JSON.stringify(reqBody))
-
-		// reqBody.signature = await generateLDSignature(reqBody, hostname, date)
 
 		for (let row of rows) {
 			const { hostname, inboxpath } = row
@@ -298,7 +290,6 @@ app.post("/inbox", async (ctx) => {
 			type: "Accept",
 			object: body,
 			actor: base + "/actor",
-			// to: [ "https://www.w3.org/ns/activitystreams#Public" ]
 		}
 
 		await inboxScheduler(`https://${hostname}/${rows[0].inboxpath}`, reqBody)
@@ -319,12 +310,8 @@ app.post("/inbox", async (ctx) => {
 			type: "Announce",
 			object: body.object,
 			actor: base + "/actor",
-			// to: [ "https://www.w3.org/ns/activitystreams#Public" ]
 		}
 
-		// const digest = generateDigestHeader(JSON.stringify(body))
-
-		// reqBody.signature = await generateLDSignature(reqBody, hostname, date)
 
 		for (let row of rows) {
 			const { hostname, inboxpath } = row
@@ -341,19 +328,6 @@ app.post("/inbox", async (ctx) => {
 			sql: "SELECT hostname, inboxpath from instances WHERE hostname != ?",
 			args: [new URL(actor).hostname]
 		})
-
-		// let reqBody = {
-		// 	"@context": ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"],
-		// 	id: base + "/inbox" + "/announce" + Math.random().toString(),
-		// 	type: "Announce",
-		// 	object: body.object,
-		// 	actor: base + "/actor",
-		// 	// to: [ "https://www.w3.org/ns/activitystreams#Public" ]
-		// }
-
-		// const digest = generateDigestHeader(JSON.stringify(body))
-
-		// reqBody.signature = await generateLDSignature(reqBody, hostname, date)
 
 		for (let row of rows) {
 			const { hostname, inboxpath } = row
