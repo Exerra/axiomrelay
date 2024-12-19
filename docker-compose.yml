@@ -9,7 +9,7 @@ services:
     ports:
       - "8079:8079"
     networks:
-      - daedricrelay
+      - axiomrelay
     volumes:
       - ./modules:/app/modules
     env_file:
@@ -19,7 +19,7 @@ services:
     restart: unless-stopped
     image: redis:7-alpine
     networks:
-      - daedricrelay
+      - axiomrelay
     volumes:
       - ./redis:/data
     healthcheck:
@@ -28,4 +28,4 @@ services:
       retries: 20
 
 networks:
-  daedricrelay:
+  axiomrelay:
