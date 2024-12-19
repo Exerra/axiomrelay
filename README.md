@@ -10,18 +10,22 @@ The official build image does not include a reverse proxy. One is **necessary** 
 
 ### Docker Compose
 
-First, create a directory and copy relevant files into it.
+1.  Create a directory and copy relevant files into it.
 
-```sh
-mkdir axiomrelay
-cd axiomrelay
-curl "https://github.com/Exerra/axiomrelay/raw/refs/heads/main/docker-compose.yml" -o docker-compose.yml
-curl "https://github.com/Exerra/axiomrelay/raw/refs/heads/main/.env.example" -o .env
-```
+    ```sh
+    mkdir axiomrelay
+    cd axiomrelay
+    curl "https://github.com/Exerra/axiomrelay/raw/refs/heads/main/docker-compose.yml" -o docker-compose.yml
+    curl "https://github.com/Exerra/axiomrelay/raw/refs/heads/main/.env.example" -o .env
+    ```
 
-Make sure to open .env with your editor of choice and change the variables there.
+2.  Make sure to open .env with your editor of choice and change the variables there.
+    It is highly advised to create a Telegram bot for managing the relay, as currently that is the only way of managing it. You can create one by messaging [@BotFather](https://t.me/botfather) on Telegram.
 
-It is highly advised to create a Telegram bot for managing the relay, as currently that is the only way of managing it. You can create one by messaging [@BotFather](https://t.me/botfather) on Telegram.
+3.  Run the relay.
+    ```sh
+    docker compose up -d
+    ```
 
 ## Modules
 
