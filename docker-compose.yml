@@ -1,6 +1,7 @@
 services:
   relay:
-    build: .
+    image: ghcr.io/exerra/axiomrelay:latest
+    # build: .
     restart: unless-stopped
     depends_on:
       redis:
