@@ -11,6 +11,7 @@ import { webpages } from "./routes/webpages";
 import { initTelegram } from "./util/telegram";
 import { generateKeys } from "./util/generateKeys";
 import { signHeaders } from "./util/signatures";
+import { randomUUID } from "node:crypto";
 
 await generateKeys()
 
@@ -20,11 +21,11 @@ const { active: modules, total } = await getModules()
 
 const telegram = await initTelegram()
 
-// console.log(`Loaded ${modules.length} modules.`)
 console.log(`[MODULES] Loaded ${modules.length} modules out of ${total} in total.`)
 
 const app = new Elysia()
 
+// Needs to be before routes
 app.onError(({ code, error }) => {
 	console.log(code, error)
 	return new Response(error.toString())
@@ -230,7 +231,7 @@ app.post("/inbox", async (ctx) => {
 
 		let reqBody = {
 			"@context": ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"],
-			id: base + "/inbox" + "/followresponse" + Math.random().toString(),
+			id: base + `/inbox/followresponse/${randomUUID()}`,
 			type: reject ? "Reject" : "Accept",
 			object: body,
 			actor: base + "/actor"
@@ -251,7 +252,7 @@ app.post("/inbox", async (ctx) => {
 
 		let reqBody = {
 			"@context": ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"],
-			id: base + "/inbox" + "/announce" + Math.random().toString(),
+			id: base + `/inbox/announce/${randomUUID()}`,
 			type: "Announce",
 			object: body.object,
 			actor: base + "/actor",
@@ -286,7 +287,7 @@ app.post("/inbox", async (ctx) => {
 
 		let reqBody = {
 			"@context": ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"],
-			id: base + "/inbox" + "/undo" + Math.random().toString(), // TODO: actual ids
+			id: base + `/inbox/undo/${randomUUID()}`, // TODO: actual ids
 			type: "Accept",
 			object: body,
 			actor: base + "/actor",
@@ -306,7 +307,7 @@ app.post("/inbox", async (ctx) => {
 
 		let reqBody = {
 			"@context": ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"],
-			id: base + "/inbox" + "/announce" + Math.random().toString(),
+			id: base + `/inbox/announce/${randomUUID()}`,
 			type: "Announce",
 			object: body.object,
 			actor: base + "/actor",
