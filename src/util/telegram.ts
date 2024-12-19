@@ -1,6 +1,6 @@
 import { Telegraf } from "telegraf"
 import env from "./env"
-import { libsql } from ".."
+import { db } from ".."
 import { generateDigestHeader } from "./signer"
 import { signHeaders } from "./signatures"
 import { randomUUID } from "node:crypto"
@@ -65,10 +65,7 @@ export const initTelegram = async () => {
                 continue
             }
 
-            let sql = await libsql.execute({
-                sql: "INSERT INTO relays (hostname, inboxurl, activity) VALUES (?, ?, ?)",
-                args: [new URL(url).hostname, url, JSON.stringify(activity)]
-            })
+            await db.run("INSERT INTO relays (hostname, inboxurl, activity) VALUES (?, ?, ?)", [ new URL(url).hostname, url, JSON.stringify(activity) ])
 
             ctx.reply("[✅] Subcribed to relay " + url)
         }
@@ -91,14 +88,12 @@ export const initTelegram = async () => {
         let domains = ctx.payload.split(" ")
 
         for (let domain of domains) {
-            let { rows } = await libsql.execute({
-                sql: "SELECT hostname, inboxurl, activity FROM relays WHERE hostname = ?",
-                args: [domain]
-            })
+            let query = db.query("SELECT hostname, inboxurl, activity FROM relays WHERE hostname = ?")
+            let relay = query.get(domain) as { hostname: string, inboxurl: string, activity: string }
 
-            let hostname = rows[0].hostname as string
-            let inbox = rows[0].inboxurl as string
-            let followActivity = JSON.parse(rows[0].activity as string)
+            let hostname = relay.hostname
+            let inbox = relay.inboxurl
+            let followActivity = JSON.parse(relay.activity)
             delete followActivity.published
 
             let activity = {
@@ -128,10 +123,7 @@ export const initTelegram = async () => {
                 continue
             }
 
-            let sql = await libsql.execute({
-                sql: "DELETE FROM relays WHERE hostname = ?",
-                args: [hostname]
-            })
+            await db.run("DELETE FROM relays WHERE hostname = ?", [ hostname ])
 
             ctx.reply("[✅] Unsubscribed from relay " + hostname)
         }
@@ -171,10 +163,9 @@ export const initTelegram = async () => {
 
         let domains = ctx.payload.split(" ")
 
-        let sql = await libsql.batch(domains.map(domain => ({
-            sql: "INSERT INTO whitelist (hostname) VALUES (?)",
-            args: [domain]
-        })))
+        for (let domain of domains) {
+            await db.run("INSERT INTO whitelist (hostname) VALUES (?)", [domain])
+        }
 
         ctx.reply("[✅] Added the following domains to the whitelist - " + domains.join(", "))
 
@@ -192,10 +183,9 @@ export const initTelegram = async () => {
 
         let domains = ctx.payload.split(" ")
 
-        let sql = await libsql.batch(domains.map(domain => ({
-            sql: "DELETE FROM whitelist WHERE hostname = ?",
-            args: [domain]
-        })))
+        for (let domain of domains) {
+            await db.run("DELETE FROM whitelist WHERE hostname = ?", [domain])
+        }
 
         ctx.reply("[✅] Removed the following domains from the whitelist - " + domains.join(", "))
 
@@ -213,10 +203,9 @@ export const initTelegram = async () => {
 
         let domains = ctx.payload.split(" ")
 
-        let sql = await libsql.batch(domains.map(domain => ({
-            sql: "INSERT INTO blacklist (hostname) VALUES (?)",
-            args: [domain]
-        })))
+        for (let domain of domains) {
+            await db.run("INSERT INTO blacklist (hostname) VALUES (?)", [domain])
+        }
 
         ctx.reply("[✅] Added the following domains to the blacklist - " + domains.join(", "))
 
@@ -233,11 +222,10 @@ export const initTelegram = async () => {
         if (payload == "") return ctx.reply("[❌] No domain(s) specified.")
 
         let domains = ctx.payload.split(" ")
-
-        let sql = await libsql.batch(domains.map(domain => ({
-            sql: "DELETE FROM blacklist WHERE hostname = ?",
-            args: [domain]
-        })))
+        
+        for (let domain of domains) {
+            await db.run("DELETE FROM blacklist WHERE hostname = ?", [domain])
+        }
 
         ctx.reply("[✅] Removed the following domains from the blacklist - " + domains.join(", "))
     })
@@ -249,12 +237,11 @@ export const initTelegram = async () => {
             return
         }
 
-        let connectedInstances = await libsql.execute({
-            sql: "SELECT hostname FROM instances",
-            args: []
-        })
+        let query = db.query("SELECT hostname FROM instances")
 
-        ctx.reply(connectedInstances.rows.map(hostname => `${hostname.hostname}`).join("\n")) 
+        let data = query.all() as { hostname: string }[]
+
+        ctx.reply(data.map(({ hostname }) => `${hostname}`).join("\n")) 
     })
 
     client.command("whitelist", async (ctx) => {
@@ -264,12 +251,11 @@ export const initTelegram = async () => {
             return
         }
 
-        let allowedInstances = await libsql.execute({
-            sql: "SELECT hostname FROM whitelist",
-            args: []
-        })
+        let query = db.query("SELECT hostname FROM whitelist")
 
-        ctx.reply(allowedInstances.rows.map(hostname => `${hostname.hostname}`).join("\n")) 
+        let data = query.all() as { hostname: string }[]
+
+        ctx.reply(data.map(({ hostname }) => `${hostname}`).join("\n")) 
     })
 
     client.command("blacklist", async (ctx) => {
@@ -279,12 +265,11 @@ export const initTelegram = async () => {
             return
         }
 
-        let blockedInstances = await libsql.execute({
-            sql: "SELECT hostname FROM blacklist",
-            args: []
-        })
+        let query = db.query("SELECT hostname FROM blacklist")
 
-        ctx.reply(blockedInstances.rows.map(hostname => `${hostname.hostname}`).join("\n")) 
+        let data = query.all() as { hostname: string }[]
+
+        ctx.reply(data.map(({ hostname }) => `${hostname}`).join("\n")) 
     })
 
     client.launch()

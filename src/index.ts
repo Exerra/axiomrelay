@@ -15,7 +15,7 @@ import { randomUUID } from "node:crypto";
 
 await generateKeys()
 
-export const libsql = await initDB()
+export const db = await initDB()
 
 const { active: modules, total } = await getModules()
 
@@ -197,23 +197,18 @@ app.post("/inbox", async (ctx) => {
 	if (body.type == "Follow") {
 		let reject = false
 
-		let blacklist = await libsql.execute({
-			sql: `SELECT count(id) FROM blacklist WHERE hostname = ?;`,
-			args: [incomingInstanceHostname]
-		})
+		let blacklistQuery = db.query("SELECT count(id) FROM blacklist WHERE hostname = ?;")
+		let blacklist = await blacklistQuery.get(incomingInstanceHostname) as { "count(id)": number }
 
-		// @ts-ignore :)
-		if (blacklist.rows[0]["count(id)"] > 0) reject = true
+		if (blacklist["count(id)"] > 0) reject = true
 
 		if (env.allowlistOnly) {
-			let whitelist = await libsql.execute({
-				sql: `SELECT count(id) FROM whitelist WHERE hostname = ?;`,
-				args: [incomingInstanceHostname]
-			})
+			let whitelistQuery = db.query("SELECT count(id) FROM whitelist WHERE hostname = ?;")
+			let whitelist = await whitelistQuery.get(incomingInstanceHostname) as { "count(id)": number }
 
 			// Blacklist is more important
-			if (blacklist.rows[0]["count(id)"] as number > 0) reject = true
-			else if (whitelist.rows[0]["count(id)"] == 0) reject = true
+			if (blacklist["count(id)"] as number > 0) reject = true
+			else if (whitelist["count(id)"] == 0) reject = true
 			else reject = false
 		}
 
@@ -245,10 +240,8 @@ app.post("/inbox", async (ctx) => {
 	else if (body.type == "Create") {
 		let id = obj.id
 
-		let { rows } = await libsql.execute({
-			sql: "SELECT hostname, inboxpath from instances WHERE hostname != ?",
-			args: [new URL(id).hostname]
-		})
+		let query = db.query("SELECT hostname, inboxpath from instances WHERE hostname != ?;")
+		let connectedInstances = await query.all(new URL(id).hostname) as { hostname: string, inboxpath: string }[]
 
 		let reqBody = {
 			"@context": ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"],
@@ -259,7 +252,7 @@ app.post("/inbox", async (ctx) => {
 		}
 
 
-		for (let row of rows) {
+		for (let row of connectedInstances) {
 			const { hostname, inboxpath } = row
 
 			await inboxScheduler(`https://${hostname}/${inboxpath}`, reqBody)
@@ -271,19 +264,16 @@ app.post("/inbox", async (ctx) => {
 
 		let hostname = new URL(actor).hostname
 
-		let sql = await libsql.execute({
-			sql: "SELECT count(id) FROM instances WHERE hostname = ?",
-			args: [hostname]
-		})
+		let instanceCountQuery = db.query("SELECT count(id) FROM instances WHERE hostname = ?;")
+		let instanceCount = await instanceCountQuery.get(hostname) as { "count(id)": number }
 
-		let count = sql.rows[0]["count(id)"]
+		let count = instanceCount["count(id)"]
 
 		if (count == 0) return
 
-		let { rows } = await libsql.execute({
-			sql: "SELECT inboxpath from instances WHERE hostname == ?",
-			args: [hostname]
-		})
+		let inboxQuery = db.query("SELECT inboxpath from instances WHERE hostname = ?;")
+		let { inboxpath } = await inboxQuery.get(hostname) as { inboxpath: string }
+		
 
 		let reqBody = {
 			"@context": ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"],
@@ -293,17 +283,15 @@ app.post("/inbox", async (ctx) => {
 			actor: base + "/actor",
 		}
 
-		await inboxScheduler(`https://${hostname}/${rows[0].inboxpath}`, reqBody)
+		await inboxScheduler(`https://${hostname}/${inboxpath}`, reqBody)
 	}
 
 	else if (body.type == "Announce") {
 		let id = obj.id
 		let actor = body.actor
 
-		let { rows } = await libsql.execute({
-			sql: "SELECT hostname, inboxpath from instances WHERE hostname != ?",
-			args: [new URL(actor).hostname]
-		})
+		let query = db.query("SELECT hostname, inboxpath from instances WHERE hostname != ?;")
+		let connectedInstances = await query.all(new URL(actor).hostname) as { hostname: string, inboxpath: string }[]
 
 		let reqBody = {
 			"@context": ["https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"],
@@ -314,7 +302,7 @@ app.post("/inbox", async (ctx) => {
 		}
 
 
-		for (let row of rows) {
+		for (let row of connectedInstances) {
 			const { hostname, inboxpath } = row
 
 			await inboxScheduler(`https://${hostname}/${inboxpath}`, reqBody)
@@ -325,12 +313,10 @@ app.post("/inbox", async (ctx) => {
 		let id = obj.id
 		let actor = body.actor
 
-		let { rows } = await libsql.execute({
-			sql: "SELECT hostname, inboxpath from instances WHERE hostname != ?",
-			args: [new URL(actor).hostname]
-		})
+		let query = db.query("SELECT hostname, inboxpath from instances WHERE hostname != ?;")
+		let connectedInstances = await query.all(new URL(actor).hostname) as { hostname: string, inboxpath: string }[]
 
-		for (let row of rows) {
+		for (let row of connectedInstances) {
 			const { hostname, inboxpath } = row
 
 			await inboxScheduler(`https://${hostname}/${inboxpath}`, body)

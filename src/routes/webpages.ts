@@ -1,5 +1,5 @@
 import Elysia from "elysia";
-import { libsql } from "..";
+import { db } from "..";
 import env from "../util/env";
 import html from "@elysiajs/html";
 
@@ -9,27 +9,23 @@ webpages.use(html())
 
 webpages.get("/", async () => {
     const base = `https://${env.hostname}`
-    
-    let connectedInstances = await libsql.execute({
-        sql: "SELECT hostname FROM instances",
-        args: []
-    })
 
-    let subscribedRelays = await libsql.execute({
-        sql: "SELECT hostname FROM relays",
-        args: []
-    })
+    let connectedQuery = db.query("SELECT hostname FROM instances")
+    let connectedInstances = connectedQuery.all() as { hostname: string }[]
+
+    let relayQuery = db.query("SELECT hostname FROM relays")
+    let subscribedRelays = relayQuery.all() as { hostname: string }[]
 
     let variables: { [key: string]: string | number | undefined } = {
-        connectedInstances: connectedInstances.rows.map(hostname => `<tr><td>${hostname.hostname}</td></tr>`).join("\n"),
+        connectedInstances: connectedInstances.map(hostname => `<tr><td>${hostname.hostname}</td></tr>`).join("\n"),
         hostname: env.hostname,
-        connectedInstancesCount: connectedInstances.rows.length,
+        connectedInstancesCount: connectedInstances.length,
         whichlist: env.allowlistOnly ? "whitelist only. Instances will have to be pre-approved." : "public.",
         base: base,
         adminUsername: env.adminUsername,
         adminURL: env.adminURL,
-        subscribedRelaysCount: subscribedRelays.rows.length,
-        subscribedRelays: subscribedRelays.rows.map(hostname => `<tr><td>${hostname.hostname}</td></tr>`).join("\n")
+        subscribedRelaysCount: subscribedRelays.length,
+        subscribedRelays: subscribedRelays.map(hostname => `<tr><td>${hostname.hostname}</td></tr>`).join("\n")
     }
 
     let template = Bun.file("./src/templates/index.html")

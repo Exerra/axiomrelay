@@ -1,6 +1,6 @@
 import Elysia from "elysia";
 import env from "../util/env";
-import { libsql } from "..";
+import { db } from "..";
 import { getModules } from "../util/modules";
 
 export const info = new Elysia()
@@ -52,15 +52,11 @@ info.get("/.well-known/nodeinfo", ({ request }) => {
 })
 
 info.get("/nodeinfo/2.0.json", async () => {
-    let connectedInstances = await libsql.execute({
-        sql: "SELECT hostname FROM instances",
-        args: []
-    })
+    let connectedQuery = db.query("SELECT hostname FROM instances")
+    let connectedInstances = connectedQuery.all() as { hostname: string }[]
 
-    let blockedInstances = await libsql.execute({
-        sql: "SELECT hostname FROM blacklist",
-        args: []
-    })
+    let blockedQuery = db.query("SELECT hostname FROM blacklist")
+    let blockedInstances = blockedQuery.all() as { hostname: string }[]
 
     return {
         version: "2.0",
@@ -86,8 +82,8 @@ info.get("/nodeinfo/2.0.json", async () => {
             localComments: 0
         },
         metadata: {
-            peers: connectedInstances.rows.map(item => item.hostname),
-            blocks: blockedInstances.rows.map(item => item.hostname),
+            peers: connectedInstances.map(item => item.hostname),
+            blocks: blockedInstances.map(item => item.hostname),
             loadedModules: (await getModules()).active.map(module => ({
                 name: module.name || null,
                 version: module.version || null,

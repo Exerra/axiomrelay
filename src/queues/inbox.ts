@@ -4,7 +4,7 @@ import { createHash, createSign } from "node:crypto"
 import env from "../util/env"
 import { generateDigestHeader } from "../util/signer"
 import { signHeaders } from "../util/signatures"
-import { libsql } from ".."
+import { db } from ".."
 
 export type Job = BQJob<{ url: string, activity: any }>
 
@@ -63,18 +63,16 @@ export const processor = async (job: Job) => {
     try {
         // If subscription to relay is accepted
         if (activity.type == "Accept" && activity.object.type == "Follow") {
-            await libsql.execute({
-                sql: "INSERT INTO instances (hostname, added_at, inboxpath) VALUES (?, ?, ?)",
-                args: [new URL(url).hostname, new Date(), "inbox"]
-            })
+            let query = "INSERT INTO instances (hostname, added_at, inboxpath) VALUES (?, ?, ?)"
+
+            await db.run(query, [ new URL(url).hostname, new Date().toISOString(), "inbox" ])
         }
 
         // If unsubscribe from relay is accepted (it should always be, but still)
         if (activity.type == "Accept" && activity.object.type == "Undo" && activity.object.object.type == "Follow") {
-            await libsql.execute({
-                sql: "DELETE FROM instances WHERE hostname = ?",
-                args: [new URL(url).hostname]
-            })
+            let query = "DELETE FROM instances WHERE hostname = ?"
+
+            await db.run(query, [ new URL(url).hostname ])
         }
     } catch (e) {
         console.log(e)
