@@ -1,6 +1,6 @@
 import Elysia from "elysia";
 import env from "../util/env";
-import { db } from "..";
+import { db, packageJson } from "..";
 import { getModules } from "../util/modules";
 
 export const info = new Elysia()
@@ -61,8 +61,8 @@ info.get("/nodeinfo/2.0.json", async () => {
     return {
         version: "2.0",
         software: {
-            name: "Relay",
-            version: "v0.0.1"
+            name: "AxiomRelay",
+            version: "v" + packageJson.version
         },
         protocols: [
             "activitypub"

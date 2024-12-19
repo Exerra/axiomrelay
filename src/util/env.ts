@@ -2,6 +2,7 @@ import { env } from "bun";
 
 export default {
     hostname: env.HOSTNAME,
+    description: env.DESCRIPTION || "This is a default AxiomRelay instance.",
     privateKey: "env.PRIVATE_KEY",
     publicKey: "env.PUBLIC_KEY",
     allowlistOnly: env.ALLOWLIST_ONLY == "true",

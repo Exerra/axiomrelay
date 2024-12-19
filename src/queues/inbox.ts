@@ -4,7 +4,7 @@ import { createHash, createSign } from "node:crypto"
 import env from "../util/env"
 import { generateDigestHeader } from "../util/signer"
 import { signHeaders } from "../util/signatures"
-import { db } from ".."
+import { db, packageJson } from ".."
 
 export type Job = BQJob<{ url: string, activity: any }>
 
@@ -38,7 +38,8 @@ export const processor = async (job: Job) => {
         digest: generateDigestHeader(JSON.stringify(activity)),
         host: hostname,
         date: new Date().toUTCString(),
-        signature: ""
+        signature: "",
+        "User-Agent": "AxiomRelay/" + packageJson.version
     }
 
     let headersToSign = ["host", "date", "digest"]

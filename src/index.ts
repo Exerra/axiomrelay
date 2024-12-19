@@ -12,7 +12,7 @@ import { initTelegram } from "./util/telegram";
 import { generateKeys } from "./util/generateKeys";
 import { signHeaders, verifySignature } from "./util/signatures";
 import { randomUUID } from "node:crypto";
-import { Parser } from "activitypub-http-signatures"
+import { getPackageJson } from "./util/package";
 
 await generateKeys()
 
@@ -21,6 +21,7 @@ export const db = await initDB()
 const { active: modules, total } = await getModules()
 
 const telegram = await initTelegram()
+export const packageJson = await getPackageJson()
 
 console.log(`[MODULES] Loaded ${modules.length} modules out of ${total} in total.`)
 
@@ -73,7 +74,7 @@ app.get("/actor", async ({ request, body, set, headers }) => {
 		endpoints: {
 			sharedInbox: base + `/inbox`
 		},
-		summary: "Oblivion Gate bot",
+		summary: "AxiomRelay bot",
 		url: base + `/actor`,
 		"@context": [
 			"https://www.w3.org/ns/activitystreams",
@@ -81,7 +82,7 @@ app.get("/actor", async ({ request, body, set, headers }) => {
 		],
 		id: base + `/actor`,
 		type: "Application",
-		name: "Oblivion Gate"
+		name: "AxiomRelay"
 	}
 
 	// temp.signature = await generateLDSignature(temp, "daedric.world", new Date().toUTCString())
@@ -98,6 +99,7 @@ app.post("/inbox", async (ctx) => {
 	let incomingInstanceHostname = new URL(body.id).hostname
 
 	// console.log(headers)
+	console.log(JSON.stringify(body, null, 4))
 	try {
 		if (headers["host"] != env.hostname) {
 			// set.status = 401
@@ -166,7 +168,7 @@ app.post("/inbox", async (ctx) => {
 
 			const actorReq = await fetch(actor.toString(), {
 				method: "GET",
-				headers: await signHeaders("get " + actor.pathname, { accept: `application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"`, host: actor.hostname, date: new Date().toUTCString() })
+				headers: await signHeaders("get " + actor.pathname, { accept: `application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"`, host: actor.hostname, date: new Date().toUTCString(), "User-Agent": "AxiomRelay/" + packageJson.version })
 			})
 
 			let actorRes = await actorReq.json()
@@ -206,6 +208,7 @@ app.post("/inbox", async (ctx) => {
 		
 				if (reject) {
 					// set.status = 401
+					console.log("Rejecting: " + body.id)
 					return 200
 				}
 			}
@@ -239,7 +242,7 @@ app.post("/inbox", async (ctx) => {
 
 		const actorReq = await fetch(actor, {
 			method: "GET",
-			headers: await signHeaders("get " + actorURL.pathname, { host: actorURL.hostname, date: new Date().toUTCString(), Accept: "application/ld+json" })
+			headers: await signHeaders("get " + actorURL.pathname, { host: actorURL.hostname, date: new Date().toUTCString(), Accept: "application/ld+json", "User-Agent": "AxiomRelay/" + packageJson.version })
 		})
 
 		const actorRes = await actorReq.json()

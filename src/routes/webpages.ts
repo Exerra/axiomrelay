@@ -1,5 +1,5 @@
 import Elysia from "elysia";
-import { db } from "..";
+import { db, packageJson } from "..";
 import env from "../util/env";
 import html from "@elysiajs/html";
 
@@ -25,7 +25,9 @@ webpages.get("/", async () => {
         adminUsername: env.adminUsername,
         adminURL: env.adminURL,
         subscribedRelaysCount: subscribedRelays.length,
-        subscribedRelays: subscribedRelays.map(hostname => `<tr><td>${hostname.hostname}</td></tr>`).join("\n")
+        subscribedRelays: subscribedRelays.map(hostname => `<tr><td>${hostname.hostname}</td></tr>`).join("\n"),
+        description: env.description,
+        version: packageJson.version
     }
 
     let template = Bun.file("./src/templates/index.html")

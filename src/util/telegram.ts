@@ -1,6 +1,6 @@
 import { Telegraf } from "telegraf"
 import env from "./env"
-import { db } from ".."
+import { db, packageJson } from ".."
 import { generateDigestHeader } from "./signer"
 import { signHeaders } from "./signatures"
 import { randomUUID } from "node:crypto"
@@ -50,7 +50,8 @@ export const initTelegram = async () => {
                 "Content-Type": "aplication/activity+json",
                 host: new URL(url).hostname,
                 date: new Date().toISOString(),
-                digest: await generateDigestHeader(JSON.stringify(activity))
+                digest: await generateDigestHeader(JSON.stringify(activity)),
+                "User-Agent": "AxiomRelay/" + packageJson.version
             }
     
             const req = await fetch(url, {
@@ -108,7 +109,8 @@ export const initTelegram = async () => {
                 "Content-Type": "aplication/activity+json",
                 host: hostname,
                 date: new Date().toISOString(),
-                digest: await generateDigestHeader(JSON.stringify(activity))
+                digest: await generateDigestHeader(JSON.stringify(activity)),
+                "User-Agent": "AxiomRelay/" + packageJson.version
             }
     
             const req = await fetch(inbox, {

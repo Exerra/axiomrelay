@@ -43,6 +43,12 @@ main {
     font-weight: bold;
 }
 
+.info > div > header > h1 >span {
+    margin: 0;
+    font-size: 20px;
+    font-weight: bold;
+}
+
 .info > div > header > p {
     margin: 0;
     margin-top: 2px;
