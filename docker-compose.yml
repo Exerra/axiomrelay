@@ -1,7 +1,7 @@
 services:
   relay:
     image: ghcr.io/exerra/axiomrelay:latest
-    # build: .
+    # build: https://github.com/Exerra/axiomrelay.git
     restart: unless-stopped
     depends_on:
       redis:
