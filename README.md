@@ -14,16 +14,11 @@ bun run dev
 
 Open http://localhost:3000/ with your browser to see the result. -->
 
-# ActivityPub relay
+# AxiomRelay
 
-wip, check back later
+> A modular ActivityPub relay with a focus on user safety and message quality standards.
 
-[quick post about this](https://daedric.world/notes/a1xzim3ktlwq00qv)
 
-if you're a relay developer and are willing to lend some assistance, please contact [Exerra](https://exerra.xyz)
+## Known issues
 
-repo name bound to change to a codeword later
-
-## todo
-
-[AP Relay TODO project](https://github.com/users/Exerra/projects/8)
+Currently Pleroma/Akkoma instances are not officially supported.
