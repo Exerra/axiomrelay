@@ -184,7 +184,7 @@ app.post("/inbox", async (ctx) => {
 		
 				if (reject) {
 					// set.status = 401
-					return 401
+					return 200
 				}
 			}
 		}
