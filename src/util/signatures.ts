@@ -1,4 +1,4 @@
-import { createHash, createSign } from "node:crypto"
+import { createHash, createSign, createVerify } from "node:crypto"
 import { canonize } from "jsonld";
 import env from "./env";
 
@@ -54,6 +54,24 @@ export const signHeaders = async (requestTarget: string, headers: any, headersTo
     headers.signature = signatureHeader
 
     return headers
+}
+
+export const verifySignature = async (requestTarget: string, headers: any, publicKey: string, signature: string, signedHeaders: string[] = ["host", "date"]) => {
+    let signArr = ["(request-target): " + requestTarget]
+
+    for (let header of signedHeaders) {
+        signArr.push(`${header}: ${headers[header]}`)
+    }
+    
+    let toSign = signArr.join("\n")
+
+    const verifier = createVerify("rsa-sha256")
+
+    verifier.update(toSign)
+
+    let verified = verifier.verify(publicKey, signature, "base64")
+
+    return verified
 }
 
 export const validateHTTPSignature = async (actor: string, headers: any) => {

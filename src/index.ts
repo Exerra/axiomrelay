@@ -10,8 +10,9 @@ import { initDB } from "./util/initDB";
 import { webpages } from "./routes/webpages";
 import { initTelegram } from "./util/telegram";
 import { generateKeys } from "./util/generateKeys";
-import { signHeaders } from "./util/signatures";
+import { signHeaders, verifySignature } from "./util/signatures";
 import { randomUUID } from "node:crypto";
+import { Parser } from "activitypub-http-signatures"
 
 await generateKeys()
 
@@ -114,6 +115,23 @@ app.post("/inbox", async (ctx) => {
 		}
 
 		let split = headers["signature"].split(",")
+		let keyId = ""
+		let signature = ""
+
+		// better to let this run in a seperate loop to insure that if keyId is after headers it still saves the keyId
+		// also yes, this system could be made more efficient, I don't want to try though
+		for (let section of split) {
+			if (!section.startsWith("keyId")) continue
+
+			keyId = section.split("=")[1].replaceAll("\"", "")
+		}
+
+		// same for this
+		for (let section of split) {
+			if (!section.startsWith("signature")) continue
+
+			signature = section.slice(11, -1).trim()
+		}
 
 		for (let section of split) {
 			if (!section.startsWith("headers")) continue
@@ -138,29 +156,33 @@ app.post("/inbox", async (ctx) => {
 				return 401
 			}
 
-			// let headersToCheckAgainst: any = {}
+			let headersToCheckAgainst: any = {}
 
-			// for (let header of headersArr) {
-			// 	headersToCheckAgainst[header] = headers[header]
-			// }
+			for (let header of headersArr) {
+				headersToCheckAgainst[header] = headers[header]
+			}
 
-			// let generatedSignedHeaders = await signHeaders("post /inbox", headersToCheckAgainst, headersArr)
+			let actor = new URL(body.actor)
 
-			// let actorHostname = new URL(body.actor).hostname
+			const actorReq = await fetch(actor.toString(), {
+				method: "GET",
+				headers: await signHeaders("get " + actor.pathname, { accept: `application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"`, host: actor.hostname, date: new Date().toUTCString() })
+			})
 
-			// try {
-			// 	const actorReq = await fetch(body.actor, {
-			// 		method: "GET",
-			// 		headers: await signHeaders("get " + new URL(body.actor).pathname, { accept: `application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"`, host: actorHostname, date: new Date().toUTCString() })
-			// 	})
-		
-			// 	console.log(actorReq.status, actorReq.statusText, actorReq.headers)
-			// 	console.log(await actorReq.json())
-			// } catch (e) {
-			// 	console.log(e)
-			// }
+			let actorRes = await actorReq.json()
 
-			// console.log(headers["signature"], generatedSignedHeaders.signature, "SIGNATURE")
+			let { publicKey } = actorRes
+
+			if (publicKey.id != keyId) {
+				// set.status = 401
+				return 401
+			}
+
+			let verified = await verifySignature("post /inbox", headersToCheckAgainst, publicKey.publicKeyPem, signature, headersArr)
+
+			if (!verified) {
+				return 401
+			}
 		}
 	} catch (e) {
 		console.log(e)
