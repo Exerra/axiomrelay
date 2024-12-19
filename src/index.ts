@@ -368,7 +368,7 @@ app.post("/inbox", async (ctx) => {
 	return 200
 })
 
-InboxQueue.process(1, async (job: InboxJob) => {
+InboxQueue.process(env.jobs.concurrency, async (job: InboxJob) => {
 	return await inboxProcessor(job)
 })
 

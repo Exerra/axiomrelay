@@ -15,5 +15,8 @@ export default {
     redis: {
         host: env.REDIS_HOST || "redis",
         port: parseInt(env.REDIS_PORT || "6379")
+    },
+    jobs: {
+        concurrency: parseInt(env.JOB_CONCURRENCY || "1")
     }
 }
