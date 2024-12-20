@@ -12,6 +12,7 @@ services:
       - axiomrelay
     volumes:
       - ./modules:/app/modules
+      - ./db:/app/db
     env_file:
       - .env
   
