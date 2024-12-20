@@ -341,7 +341,7 @@ app.post("/inbox", async (ctx) => {
 		let query = db.query("SELECT hostname, inboxpath from instances WHERE hostname != ?;")
 		let connectedInstances = await query.all(new URL(actor).hostname) as { hostname: string, inboxpath: string }[]
 
-		if ("signature" in body) delete body.signature // hotfix?
+		// if ("signature" in body) delete body.signature // hotfix?
 
 		for (let row of connectedInstances) {
 			const { hostname, inboxpath } = row
