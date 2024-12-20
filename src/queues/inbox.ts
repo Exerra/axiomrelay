@@ -46,9 +46,13 @@ export const processor = async (job: Job) => {
 
     let headersToSign = ["host", "date", "digest"]
 
+    let signedHeaders = await signHeaders(`post ${new URL(url).pathname}`, headersForSignage, headersToSign)
+
+    if (env.debug) console.log(headersForSignage, headersToSign, signedHeaders)
+
     let req = await fetch(url, {
         method: "POST",
-        headers: await signHeaders(`post ${new URL(url).pathname}`, headersForSignage, headersToSign),
+        headers: signedHeaders,
         body: JSON.stringify(activity),
     })
 
