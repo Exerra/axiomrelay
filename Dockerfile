@@ -1,4 +1,5 @@
 FROM oven/bun:latest
+LABEL org.opencontainers.image.source="https://github.com/Exerra/axiomrelay"
 
 WORKDIR /app
 
