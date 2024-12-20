@@ -33,6 +33,8 @@ export const processor = async (job: Job) => {
     const base = `https://${env.hostname}`
     const hostname = new URL(url).hostname
 
+    if (env.debug) console.log(url)
+
     let headersForSignage = {
         "Content-Type": `application/activity+json`,
         digest: generateDigestHeader(JSON.stringify(activity)),
@@ -60,6 +62,8 @@ export const processor = async (job: Job) => {
     }
 
     const res = await req.text()
+
+    if (env.debug) console.log(req.status, req.statusText, res)
 
     try {
         // If subscription to relay is accepted
