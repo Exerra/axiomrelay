@@ -21,6 +21,7 @@ These commands administrate the relay:
 /unsubscribe - Unsubscribes from relay (requires just a domain)`
 
 export const initTelegram = async () => {
+    if (!env.telegram.enabled) return null
     const client = new Telegraf(env.telegram.apiKey!)
 
     client.command("subscribe", async (ctx) => {

@@ -99,7 +99,7 @@ app.post("/inbox", async (ctx) => {
 	let incomingInstanceHostname = new URL(body.id).hostname
 
 	// console.log(headers)
-	console.log(JSON.stringify(body, null, 4))
+	// console.log(JSON.stringify(body, null, 4))
 	try {
 		if (headers["host"] != env.hostname) {
 			// set.status = 401
