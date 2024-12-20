@@ -15,8 +15,8 @@ The official build image does not include a reverse proxy. One is **necessary** 
     ```sh
     mkdir axiomrelay
     cd axiomrelay
-    curl "https://github.com/Exerra/axiomrelay/raw/refs/heads/main/docker-compose.yml" -o docker-compose.yml
-    curl "https://github.com/Exerra/axiomrelay/raw/refs/heads/main/.env.example" -o .env
+    curl "https://raw.githubusercontent.com/Exerra/axiomrelay/refs/heads/main/docker-compose.yml" -o docker-compose.yml
+    curl "https://raw.githubusercontent.com/Exerra/axiomrelay/refs/heads/main/.env.example" -o .env
     ```
 
 2.  Make sure to open .env with your editor of choice and change the variables there.
